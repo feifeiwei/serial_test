@@ -1,0 +1,43 @@
+syntax = "proto2";
+
+package test;
+
+// import "apollo/modules/common/proto/header.proto";
+
+
+message control_base {
+
+  enum Status {
+    SHUTDOWN = 0;
+    STARTUP = 1;
+    RESET = 2;
+  }
+
+  enum Mode {
+    MIN_PER = 0;
+    NORMAL = 1;
+    MAX_PER = 2;
+  }
+
+
+  // 设定设备启停复位.
+  optional Status running_status = 1; 
+
+  // 设定设备运行模式. 
+  optional Mode running_mode = 2;  
+
+  // 设定可见光地址.
+  optional string visible_image_addr = 3; 
+
+  // 设定红外地址.
+  optional string infrared_image_addr = 4;
+
+  // 设定雷达地址.
+  optional string sar_image_addr = 5;
+
+  // 校验和.
+  optional uint32 checksum = 6;
+
+  // 帧尾
+  optional uint32 tail = 7;  
+}
