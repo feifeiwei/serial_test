@@ -35,9 +35,9 @@ class Data(Structure):
                 ]
 
 data = Data()
-PORT = 8000
+PORT = 18000
 receiver_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-address = ("192.168.56.1", PORT)
+address = ("172.20.10.12", PORT)
 receiver_socket.bind(address)
 
 while True:
@@ -48,6 +48,16 @@ while True:
 
 
     print(hex(data.member_1))
+    print(hex(data.member_2))
+    print(hex(data.member_3))
+    print(hex(data.member_4))
+    print(hex(data.member_5))
+    print(hex(data.member_6))
+    print((data.member_7))
+    print((data.member_8))
+    print((data.member_9))
+    print(hex(data.member_10))
+    print(hex(data.member_11))
 
     # print ('member_1: %d\n' % data.member_1, 'member_2: %d\n' % data.member_2, 'member_3: %d\n' % data.member_3, \
     #       'member_4: %d\n' % data.member_4, 'member_5: %d\n' % data.member_5,'member_6: %d\n' % data.member_6)

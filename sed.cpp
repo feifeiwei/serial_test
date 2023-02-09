@@ -22,9 +22,9 @@ struct A    //要发送的数据结构
     uint8_t num5;
     uint8_t num6;
 
-    // char24 num7;
-    // char24 num7;
-    // char24 num9;
+    char* num7;  // how to get 24bit type??
+    char* num8;
+    char* num9;
 
     uint8_t num10;
     uint8_t num11;
@@ -42,9 +42,9 @@ int main(void)
     message.num4 = 125;
     message.num5 = 125;
     message.num6 = 125;
-    // message.num7 = "192.168.12.1:1630";
-    // message.num8 = "192.168.12.1:1630";
-    // message.num9 = "192.168.12.1:1630";
+    message.num7 = "192.168.12.1:1630"; 
+    message.num8 = "192.168.12.1:1630";
+    message.num9 = "192.168.12.1:1630";
     message.num10= 125;
     message.num11= 125;
     //定义socket套字
@@ -67,11 +67,11 @@ int main(void)
         // printf("4: %d\n",message.num4);
         std::cout <<"5: " <<  +message.num5 << std::endl;
         std::cout <<"6: " <<  +message.num6 << std::endl;
-        // std::cout <<"7: " <<  message.num7 << std::endl;
-        // std::cout <<"8: " <<  message.num8 << std::endl;
-        // std::cout <<"9: " <<  message.num9 << std::endl;
-        std::cout <<"8: " <<  +message.num10 << std::endl;
-        std::cout <<"9: " <<  +message.num11 << std::endl;
+        std::cout <<"7: " <<  message.num7 << std::endl;
+        std::cout <<"8: " <<  message.num8 << std::endl;
+        std::cout <<"9: " <<  message.num9 << std::endl;
+        std::cout <<"10: " <<  +message.num10 << std::endl;
+        std::cout <<"11: " <<  +message.num11 << std::endl;
         std::cout <<"--------------------------------------------------"<< std::endl;
 
         sendto(sock, &message, sizeof(A), 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
