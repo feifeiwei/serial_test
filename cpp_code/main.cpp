@@ -11,24 +11,44 @@
 
 using namespace std;
 
-// struct char24{
-//     unsigned char data : 24;
-// };
-//struct customStructure {
-//
-//    customStructure(const string& str):s(str.c_str()) {}
-//    customStructure& operator=(const string& str)
-//    {
-//        s = str.c_str();
-//        return *this;
-//    }
-//
-//    const char* s;
-//};
 
 
-
-
+class Socket_tools
+{
+public:
+    Socket_tools(const char* ip_send, const char* ip_receive):
+    ip_send(ip_send), ip_receive(ip_receive){
+        // init socket.
+        memset(&servaddr, 0, sizeof(servaddr)); //把servaddr内存清零
+        sock = socket(AF_INET, SOCK_DGRAM, 0);
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_port = htons(PORT);
+        servaddr.sin_addr.s_addr = inet_addr(ip_send);
+    }
+    
+    template<class T>
+    void send_msg(T& table)
+    {
+        sendto(sock, &table, sizeof(T), 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
+    }
+    
+    template<class T>
+    void receive_msg();
+    
+    
+    ~Socket_tools()
+    {
+        close(sock);
+    }
+    
+    
+private:
+    std::string ip_send;
+    std::string ip_receive;
+    
+    struct sockaddr_in servaddr;
+    int sock; //定义socket套字
+};
 
 
 int main(void)
@@ -50,24 +70,18 @@ int main(void)
     
     message.num11= 0x4f;
     message.num12= 0xaa;
-    //定义socket套字
-    int sock;
-    struct sockaddr_in servaddr;
-    memset(&servaddr, 0, sizeof(servaddr)); //把servaddr内存清零
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(PORT);
-    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    
+    Socket_tools sock("127.0.0.1", "127.0.0.1");
+    
     while (1)
     {
-        sendto(sock, &message, sizeof(tabele_29_34), 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
+        sock.send_msg<tabele_29_34>(message);
         sleep(1);
-        
         break;
     }
     
     std::cout <<"Done."<<  message.get_checkSum() << std::endl;
-    close(sock);
+//    close(sock);
     std::cout <<"Done."<< std::endl;
     
     if (message.is_equal())
@@ -77,3 +91,4 @@ int main(void)
     
     return 0;
 }
+
