@@ -65,7 +65,7 @@ uint16_t do_crc_checkSum(uint8_t* buff, uint16_t len)
     uint16_t crc = 0xFFFF;
     
     while (len-->0) {
-        crc = ccitt_tables[(crc>>8 ^ *buff++) & 0xff]^ (crc<<8);
+        crc = ccitt_tables[(crc>>8 ^ *buff++) & 0xff]^ (crc>>8);
     }
     return crc;
 }
@@ -82,10 +82,10 @@ uint16_t table_28::get_checkSum()
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len << 8;
+    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
     
-    buff[idx++] = msg_code << 8;
+    buff[idx++] = msg_code >> 8;
     buff[idx++] = msg_code & 0xff;
     
     buff[idx++] = control_type;
@@ -145,10 +145,10 @@ uint16_t table_33::get_checkSum()
     uint8_t  buff[len];
     int idx=0;
     
-    buff[idx++] = data_len << 8;
+    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
     
-    buff[idx++] = msg_code << 8;
+    buff[idx++] = msg_code >> 8;
     buff[idx++] = msg_code & 0xff;
     
     buff[idx++] = control_type;
@@ -188,10 +188,10 @@ uint16_t table_29::get_checkSum()
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len << 8;
+    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
     
-    buff[idx++] = msg_code << 8;
+    buff[idx++] = msg_code >> 8;
     buff[idx++] = msg_code & 0xff;
     
     buff[idx++] = control_type;
@@ -247,9 +247,9 @@ uint16_t table_34::get_checkSum()
     uint8_t  buff[len];
     int idx=0;
     
-    buff[idx++] = data_len << 8;
+    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
-    buff[idx++] = msg_code << 8;
+    buff[idx++] = msg_code >> 8;
     buff[idx++] = msg_code & 0xff;
     buff[idx++] = control_type;
     
@@ -276,9 +276,407 @@ uint16_t table_34::get_checkSum()
 
 // ------------------------ table 29 34 ------------------------------------------
 // ------------------------ table 30 35 ------------------------------------------
+bool table_30::is_equal()
+{
+    return checkSum==get_checkSum();
+}
+
+uint16_t table_30::get_checkSum()
+{
+    uint16_t len = sizeof(table_30)-5; //
+    uint8_t buff[len];
+    
+    int idx=0;
+    buff[idx++] = data_len >> 8;
+    buff[idx++] = data_len & 0xff;
+    
+    buff[idx++] = msg_code >> 8;
+    buff[idx++] = msg_code & 0xff;
+    
+    buff[idx++] = control_type;
+    
+    buff[idx++] = track_isBegin;
+    buff[idx++] = track_pattern;
+    buff[idx++] = track_principle;
+    
+    buff[idx++] = track_id_manual >> 8;
+    buff[idx++] = track_id_manual & 0xff;
+    
+    buff[idx++] = track_conf;
+    buff[idx++] = track_maximum >> 8;
+    buff[idx++] = track_maximum & 0xff;
+    buff[idx++] = track_free >> 8;
+    buff[idx++] = track_free & 0xff;
+    
+    for(const auto &c: keep) buff[idx++] = c;
+    
+    assert(idx==len); //check!
+    
+    uint16_t crc = do_crc_checkSum(buff, len);
+
+    return crc;
+}
 
 
 
+table_35& table_35::operator=(const table_30& t30)
+{
+    header = t30.header;
+    data_len = t30.data_len;
+    msg_code = t30.msg_code;
+    control_type = t30.control_type;
+    
+    track_isBegin  =  t30.track_isBegin;     // object detector start or stop. 00=stop 01=strat
+    track_pattern  =  t30.track_pattern;    // object pattern
+    track_principle=  t30.track_principle; //
+    track_id_manual=  t30.track_id_manual;
+    track_conf     =  t30.track_conf;   //
+    track_maximum  =  t30.track_maximum; //
+    track_free     =  t30.track_free; //
+    
+    memcpy(keep, t30.keep, 4);; // 预留
+//    error_msg; //错误码
+    
+    tail = 0xAA; // same
+    
+    return *this;
+    
+}
 
+
+uint16_t table_35::get_checkSum()
+{
+    uint16_t len = sizeof(table_35)-5;
+    uint8_t  buff[len];
+    int idx=0;
+    
+    buff[idx++] = data_len >> 8;
+    buff[idx++] = data_len & 0xff;
+    buff[idx++] = msg_code >> 8;
+    buff[idx++] = msg_code & 0xff;
+    buff[idx++] = control_type;
+    
+    buff[idx++] = track_isBegin;
+    buff[idx++] = track_pattern;
+    buff[idx++] = track_principle;
+    
+    buff[idx++] = track_id_manual >> 8;
+    buff[idx++] = track_id_manual & 0xff;
+    
+    buff[idx++] = track_conf;
+    buff[idx++] = track_maximum >> 8;
+    buff[idx++] = track_maximum & 0xff;
+    buff[idx++] = track_free >> 8;
+    buff[idx++] = track_free & 0xff;
+    
+    for(const auto &c: keep) buff[idx++] = c;
+    buff[idx++] = error_msg;
+    
+    assert(idx==len); //check!
+    
+    uint16_t crc = do_crc_checkSum(buff, len);
+    
+    return crc;
+}
 
 // ------------------------ table 30 35 ------------------------------------------
+// ------------------------ table 31 36 ------------------------------------------
+
+bool table_31::is_equal()
+{
+    return checkSum==get_checkSum();
+}
+
+uint16_t table_31::get_checkSum()
+{
+    uint16_t len = sizeof(table_31)-5; //
+    uint8_t buff[len];
+    
+    int idx=0;
+    buff[idx++] = data_len >> 8;
+    buff[idx++] = data_len & 0xff;
+    
+    buff[idx++] = msg_code >> 8;
+    buff[idx++] = msg_code & 0xff;
+    
+    buff[idx++] = control_type;
+    
+    buff[idx++] = alart_isBegin;
+    for(const auto &c: alart_port) buff[idx++] = c;
+    buff[idx++] = alart_trigger_mode; //
+    buff[idx++] = alart_classes;
+    buff[idx++] = alart_threat_level;   //
+    buff[idx++] = unknownObj_alart_conf; //
+    buff[idx++] = alart_free >> 8;
+    buff[idx++] = alart_free & 0xff;
+    
+    for(const auto &c: keep) buff[idx++] = c;; // 预留
+    
+    assert(idx==len); //check!
+    
+    uint16_t crc = do_crc_checkSum(buff, len);
+
+    return crc;
+
+}
+
+table_36& table_36::operator=(const table_31& t31)
+{
+    header = t31.header;
+    data_len = t31.data_len;
+    msg_code = t31.msg_code;
+    control_type = t31.control_type;
+    
+    
+    alart_isBegin = t31.alart_isBegin;
+    memcpy(alart_port, t31.alart_port, 24);; // 预留
+    alart_trigger_mode = t31.alart_trigger_mode; //
+    alart_classes = t31.alart_classes;
+    alart_threat_level = t31.alart_threat_level;   //
+    unknownObj_alart_conf = t31.unknownObj_alart_conf; //
+    alart_free = t31.alart_free; //
+    
+    memcpy(keep, t31.keep, 4);; // 预留
+
+    
+    tail = 0xAA; // same
+    
+    return *this;
+    
+}
+
+uint16_t table_36::get_checkSum()
+{
+    uint16_t len = sizeof(table_36)-5; //
+    uint8_t buff[len];
+    
+    int idx=0;
+    buff[idx++] = data_len >> 8;
+    buff[idx++] = data_len & 0xff;
+    
+    buff[idx++] = msg_code >> 8;
+    buff[idx++] = msg_code & 0xff;
+    
+    buff[idx++] = control_type;
+    
+    buff[idx++] = alart_isBegin;
+    for(const auto &c: alart_port) buff[idx++] = c;
+    buff[idx++] = alart_trigger_mode; //
+    buff[idx++] = alart_classes;
+    buff[idx++] = alart_threat_level;   //
+    buff[idx++] = unknownObj_alart_conf; //
+    buff[idx++] = alart_free >> 8;
+    buff[idx++] = alart_free & 0xff;
+    
+    for(const auto &c: keep) buff[idx++] = c;; // 预留
+    buff[idx++] = error_msg;
+    
+    assert(idx==len); //check!
+    
+    uint16_t crc = do_crc_checkSum(buff, len);
+    return crc;
+
+}
+
+
+// ------------------------ table 31 36 ------------------------------------------
+// ------------------------ table 32 37 ------------------------------------------
+bool table_32::is_equal()
+{
+    return checkSum==get_checkSum();
+}
+
+uint16_t table_32::get_checkSum()
+{
+    uint16_t len = sizeof(table_32)-5; //
+    uint8_t buff[len];
+    
+    int idx=0;
+    buff[idx++] = data_len >> 8;
+    buff[idx++] = data_len & 0xff;
+    
+    buff[idx++] = msg_code >> 8;
+    buff[idx++] = msg_code & 0xff;
+    
+    buff[idx++] = control_type;
+    
+    buff[idx++] = obj_classes;     // see appendix 2
+    
+    for(const auto &c: keep) buff[idx++] = c;; // 预留
+    
+    assert(idx==len); //check!
+    
+    uint16_t crc = do_crc_checkSum(buff, len);
+
+    return crc;
+
+}
+
+table_37& table_37::operator=(const table_32& t32)
+{
+    header = t32.header;
+    data_len = t32.data_len;
+    msg_code = t32.msg_code;
+    control_type = t32.control_type;
+    
+    obj_classes = t32.obj_classes;
+    
+    memcpy(keep, t32.keep, 2);; // 预留
+
+    tail = 0xAA; // same    
+    return *this;
+    
+}
+
+uint16_t table_37::get_checkSum()
+{
+    uint16_t len = sizeof(table_37)-5; //
+    uint8_t buff[len];
+    
+    int idx=0;
+    buff[idx++] = data_len >> 8;
+    buff[idx++] = data_len & 0xff;
+    
+    buff[idx++] = msg_code >> 8;
+    buff[idx++] = msg_code & 0xff;
+    
+    buff[idx++] = control_type;
+    
+    buff[idx++] = obj_classes;     // see appendix 2
+    
+    for(const auto &c: keep) buff[idx++] = c;; // 预留
+    buff[idx++] = error_msg;
+    
+    assert(idx==len); //check!
+    
+    uint16_t crc = do_crc_checkSum(buff, len);
+    return crc;
+
+}
+
+
+// ------------------------ table 32 37 ------------------------------------------
+// ------------------------condition query------------------------------------------
+// ------------------------ table 38 39 ------------------------------------------
+bool table_38::is_equal()
+{
+    return checkSum==get_checkSum();
+}
+
+uint16_t table_38::get_checkSum()
+{
+    uint16_t len = sizeof(table_38)-5; //
+    uint8_t buff[len];
+    
+    int idx=0;
+    buff[idx++] = data_len >> 8;
+    buff[idx++] = data_len & 0xff;
+    
+    buff[idx++] = msg_code >> 8;
+    buff[idx++] = msg_code & 0xff;
+    
+    buff[idx++] = query_type;
+
+    for(const auto &c: keep) buff[idx++] = c;; // 预留
+    
+    assert(idx==len); //check!
+    
+    uint16_t crc = do_crc_checkSum(buff, len);
+    return crc;
+}
+
+
+
+uint16_t table_39::get_checkSum()
+{
+    uint16_t len = sizeof(table_39)-5; //
+    uint8_t buff[len];
+    
+    int idx=0;
+    buff[idx++] = data_len >> 8;
+    buff[idx++] = data_len & 0xff;
+    
+    buff[idx++] = msg_code >> 8;
+    buff[idx++] = msg_code & 0xff;
+    
+    buff[idx++] = feedback_type;  // device condition feedback.
+    for(const auto &c: data_source) buff[idx++] = c;; // 预留
+    buff[idx++] = device_stop_status;
+    
+    buff[idx++] = det_pattern;
+    buff[idx++] =  det_dataSource_status;
+    buff[idx++] =  preprocess_method;
+    buff[idx++] =  obj_conf;   //detect confidence
+    buff[idx++] =  obj_rec_conf; // recognition confidence
+    buff[idx++] =  minimum_len; // for obj detect minimum bbox len.
+    buff[idx++] =  minimum_width; // for obj detect minimum bbox w.
+    buff[idx++] =  unknown_det_status;
+    
+    buff[idx++] =  track_func_status;
+    buff[idx++] =  track_pattern;    // object pattern
+    buff[idx++] =  track_principle; //
+    buff[idx++] = track_maximum >> 8;
+    buff[idx++] = track_maximum & 0xff;
+    buff[idx++] =  track_conf;   //
+    
+    buff[idx++] =  alart_func_status;
+    for(const auto &c: alart_port) buff[idx++] = c;; // 预留
+    buff[idx++] =  alart_trigger_mode; //
+    buff[idx++] =  alart_classes;
+    buff[idx++] =  alart_threat_level;   //
+    buff[idx++] =  unknownObj_alart_conf; //
+    
+    
+    for(const auto &c: keep) buff[idx++] = c;; // 预留
+    buff[idx++] = error_msg;
+    assert(idx==len); //check!
+    
+    uint16_t crc = do_crc_checkSum(buff, len);
+    
+    return crc;
+    
+}
+
+uint16_t table_40::get_checkSum()
+{
+    uint16_t len = sizeof(table_40)-5; //
+    uint8_t buff[len];
+    
+    int idx=0;
+    buff[idx++] = data_len >> 8;
+    buff[idx++] = data_len & 0xff;
+    
+    buff[idx++] = msg_code >> 8;
+    buff[idx++] = msg_code & 0xff;
+    
+    buff[idx++] = feedback_type;  // device condition feedback.
+
+    buff[idx++] =  data_type_supported;
+    buff[idx++] =  is_preprocess_method; // if set or not.
+    buff[idx++] =  is_det_conf;
+    buff[idx++] =  is_recog_conf;
+    buff[idx++] =  is_minimumSize;
+    buff[idx++] =  is_unknown;
+    buff[idx++] =  is_track_conf;
+    
+    buff[idx++] =  is_alart_func;
+    buff[idx++] =  is_3d_bbox;
+    buff[idx++] =  is_recog_msg_conf;
+    buff[idx++] =  is_obj_det_msg_conf;
+    buff[idx++] =  is_unknown_conf;
+    
+    for(const auto &c: keep) buff[idx++] = c;; // 预留
+    buff[idx++] = error_msg;
+    assert(idx==len); //check!
+    
+    uint16_t crc = do_crc_checkSum(buff, len);
+    
+    return crc;
+
+}
+// ------------------------ table 38 39 40 ------------------------------------------
+// ------------------------ table 44  image upload msg ------------------------------------------
+
+
+
+// ------------------------ table 44  image upload msg ------------------------------------------

@@ -10,6 +10,12 @@
 #include <unistd.h>
 #include <stdio.h>
 
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+
+
 template<typename T>
 int split_int(T num);
 int split_char(unsigned char*);
@@ -144,7 +150,7 @@ struct table_30    // object tracking
     uint8_t track_isBegin;     // object detector start or stop. 00=stop 01=strat
     uint8_t track_pattern;    // object pattern
     uint8_t track_principle; //
-    uint16_t track_id_manua;
+    uint16_t track_id_manual;
     uint8_t track_conf;   //
     uint16_t track_maximum; //
     uint16_t track_free; //
@@ -171,7 +177,7 @@ struct table_35    // object tracking
     uint8_t track_isBegin;     // object detector start or stop. 00=stop 01=strat
     uint8_t track_pattern;    // object pattern
     uint8_t track_principle; //
-    uint16_t track_id_manua;
+    uint16_t track_id_manual;
     uint8_t track_conf;   //
     uint16_t track_maximum; //
     uint16_t track_free; //
@@ -282,7 +288,7 @@ struct table_37    // object detection classes control msg
     uint8_t tail;  //#帧尾
     
     uint16_t get_checkSum(); //成员函数不占空间
-    bool is_equal(); //校验和是否一致。
+    table_37& operator=(const table_32& t32);
 };
 #pragma pack(pop)
 
@@ -312,26 +318,49 @@ struct table_38    // object detection device‘s condition query.
 
 
 #pragma pack(push,1)
-struct table_39x    // object detection device‘s condition query.  return msg.
+struct table_39    // object detection device‘s condition query.  return msg.
 {
     uint16_t header; //帧头
     uint16_t data_len; //数据长度
     uint16_t msg_code;  //消息代码
         
-    uint8_t feedback_type;  // condition or ability query 01H 02H
-
-    unsigned char keep[2]; // 预留
+    uint8_t feedback_type;  // device condition feedback.
+    unsigned char data_source[96];
+    uint8_t device_stop_status;
     
+    uint8_t det_pattern;
+    uint8_t det_dataSource_status;
+    uint8_t preprocess_method;
+    uint8_t obj_conf;   //detect confidence
+    uint8_t obj_rec_conf; // recognition confidence
+    uint8_t minimum_len; // for obj detect minimum bbox len.
+    uint8_t minimum_width; // for obj detect minimum bbox w.
+    uint8_t unknown_det_status;
+    
+    uint8_t track_func_status;
+    uint8_t track_pattern;    // object pattern
+    uint8_t track_principle; //
+    uint16_t track_maximum; //
+    uint8_t track_conf;   //
+    
+    uint8_t alart_func_status;
+    unsigned char alart_port[24];    // object pattern
+    uint8_t alart_trigger_mode; //
+    uint8_t alart_classes;
+    uint8_t alart_threat_level;   //
+    uint8_t unknownObj_alart_conf; //
+    
+    unsigned char keep[4]; // 预留
+    uint8_t error_msg;
     uint16_t checkSum; //#校验和
     uint8_t tail;  //#帧尾
     
     uint16_t get_checkSum(); //成员函数不占空间
-    bool is_equal(); //校验和是否一致。
 };
 #pragma pack(pop)
 
 #pragma pack(push,1)
-struct table_40x    // object detection device‘s ability query.  return msg.
+struct table_40    // object detection device‘s ability query.  return msg.
 {
     uint16_t header; //帧头
     uint16_t data_len; //数据长度
@@ -339,15 +368,60 @@ struct table_40x    // object detection device‘s ability query.  return msg.
         
     uint8_t feedback_type;  // condition or ability query 01H 02H
 
-    unsigned char keep[2]; // 预留
+    uint8_t data_type_supported;
+    uint8_t is_preprocess_method; // if set or not.
+    uint8_t is_det_conf;
+    uint8_t is_recog_conf;
+    uint8_t is_minimumSize;
+    uint8_t is_unknown;
+    uint8_t is_track_conf;
     
+    uint8_t is_alart_func;
+    uint8_t is_3d_bbox;
+    uint8_t is_recog_msg_conf;
+    uint8_t is_obj_det_msg_conf;
+    uint8_t is_unknown_conf;
+    
+    unsigned char keep[1]; // 预留
+    uint8_t error_msg;
     uint16_t checkSum; //#校验和
     uint8_t tail;  //#帧尾
     
     uint16_t get_checkSum(); //成员函数不占空间
-    bool is_equal(); //校验和是否一致。
 };
 #pragma pack(pop)
+
+
+
+
+
+// ------------------------ table 44  image upload msg ------------------------------------------
+#pragma pack(push,1)
+struct table_44    // object detection device‘s ability query.  return msg.
+{
+    uint16_t header; //帧头
+    uint16_t data_len; //数据长度
+    uint16_t msg_code;  //消息代码
+    uint8_t msg_class; //03H 图像信息
+    
+    uint32_t image_id;
+    uint16_t pkg_order; //包序号
+    uint8_t pkg_type;
+    
+    uint8_t pkg_total_num;
+    
+    unsigned char data[1920*1080*3];  //具体数据
+    
+    unsigned char keep[6]; // 预留
+    uint16_t checkSum; //#校验和
+    uint8_t tail;  //#帧尾
+    
+    
+    uint16_t get_checkSum(); //成员函数不占空间
+    
+};
+#pragma pack(pop)
+// ------------------------ table 44  image upload msg ------------------------------------------
 
 
 
