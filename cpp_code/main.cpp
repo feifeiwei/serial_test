@@ -11,6 +11,18 @@
 
 #define PORT 18000
 
+cv::Mat ucharArray2Mat(unsigned char* frame_char, int width, int height, int channel)
+{
+    cv::Mat image_mat;
+    if (channel == 4)
+        image_mat = cv::Mat(height, width, CV_8UC4, frame_char);
+    if (channel == 3)
+        image_mat = cv::Mat(height, width, CV_8UC3, frame_char);
+    if (channel == 1)
+        image_mat = cv::Mat(height, width, CV_8UC1, frame_char);
+    return image_mat;
+}
+
 
 class Socket_pullMsg
 {
@@ -18,7 +30,7 @@ public:
     Socket_pullMsg(const char* ip_receive, int port):
     ip_receive(ip_receive), port(port), flag_pull(true)
     {
-//        init socket pull msg.
+//      init socket pull msg.
         sockrc = socket(AF_INET, SOCK_DGRAM, 0);
         pulladdr.sin_family = AF_INET;
         pulladdr.sin_port = htons(port);
@@ -29,9 +41,64 @@ public:
             flag_pull = false;
         }
     }
+    void pull_msg_chunk(table_44& t44, int chunk_size=1024)
+    {
+        if(!flag_pull)
+        {
+            std::cerr << "bind fails for socket pull msg." << std::endl;
+            return;
+        }
+        
+        socklen_t len = sizeof(pulladdr);
+        int buffer_len = sizeof(table_44) + table_44::width*table_44::height*table_44::channel - 8; //数据总长度 + new
+//        std::cout << "\nbuffer_len: " << buffer_len << std::endl; //6220824=1080p
+        int chunk = chunk_size; //每次发送长度‘
+        unsigned char* data = new unsigned char[buffer_len];
+        unsigned char* header = data; // make pointer point to header
+        
+        while(buffer_len>chunk){
+            int ret = recvfrom(sockrc, data, chunk, 0, (struct sockaddr*)&pulladdr, &len);
+            buffer_len -= chunk;
+            data += chunk;
+        }
+        
+        if (buffer_len) {
+            int ret = recvfrom(sockrc, data, buffer_len, 0, (struct sockaddr*)&pulladdr, &len);
+        }
+        long idx = 0;
+        t44.header = (header[idx++] << 8) + header[idx++];
+        t44.data_len = (header[idx++] << 8) + header[idx++];
+        t44.msg_code = (header[idx++] << 8) + header[idx++];
+        t44.msg_class = header[idx++];
+        
+        t44.image_id = (header[idx++] << 24)+(header[idx++] << 16) +(header[idx++] << 8) + header[idx++];
+        t44.pkg_order = (header[idx++] << 8) + header[idx++];
+        t44.pkg_type = header[idx++];
+        t44.pkg_total_num = header[idx++];
+
+//        for(auto &c : t44.img_data) c = header[idx++]; // img
+        for(int i=0; i< table_44::width * table_44::height * table_44::channel; i++)
+            t44.img_data[i] = header[idx++];
+        
+        for(auto &c : t44.keep) c = header[idx++]; //
+        
+//        t44.checkSum = t44.get_checkSum();
+    }
+    
+    
     
     template<class T>
-    void pull_msg();
+    void pull_msg(T& table)
+    {
+        if(!flag_pull)
+        {
+            std::cerr << "bind fails for socket pull msg." << std::endl;
+            return;
+        }
+        //        unsigned char buffer[buff_size];
+        socklen_t len = sizeof(pulladdr);
+        int ret = recvfrom(sockrc, table, sizeof(T), 0, (struct sockaddr*)&pulladdr, &len);
+    }
     
     void pull_image(cv::Mat& im, int width, int height) //接收图像
     {
@@ -55,13 +122,13 @@ public:
         if(buffer==300)
         {
             for(int i=0;i<height;i=i+1)
-            {
-              int rec=recvfrom(sockrc,data+i*width*3,sizeof(unsigned char)*width*3,0,(struct sockaddr*)&pulladdr,&len);
+            {//如果未发生错误， recvfrom 将返回收到的字节数
+              recvfrom(sockrc,data+i*width*3,sizeof(unsigned char)*width*3,0,(struct sockaddr*)&pulladdr,&len);
              }
             memcpy(im.data,data,sizeof(unsigned char)*width*height*3);
         }
         
-        
+        delete []data; // for new 
     }
     
     bool get_flag() //是否可以接收消息
@@ -96,24 +163,49 @@ public:
         memset(&servaddr, 0, sizeof(servaddr)); //把servaddr内存清零
         sock = socket(AF_INET, SOCK_DGRAM, 0);
         servaddr.sin_family = AF_INET;
-        servaddr.sin_port = htons(PORT);
+        servaddr.sin_port = htons(port);
         servaddr.sin_addr.s_addr = inet_addr(ip_send);
     }
     
     template<class T>
-    void send_msg(T& table)
+    void send_msg_chunk(T& table, int chunk_size=1024) //分断发送
+    {
+        int buffer_len = sizeof(T);
+        int chunk = chunk_size; //每次发送长度
+    
+        unsigned char* data = reinterpret_cast<unsigned char*>(&table);
+        
+        while (buffer_len>chunk) {
+            int ret = sendto(sock, data, chunk, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
+            buffer_len -= chunk;
+            data = data + chunk;
+        }
+        if(buffer_len){
+            int ret = sendto(sock, &table, buffer_len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
+        }
+    }
+    
+    
+    template<class T>
+    void send_msg(T& table) //一次性发送
     {
         sendto(sock, &table, sizeof(T), 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
     }
     
-    void push_image(unsigned char* data, int width, int height)
+    void push_image(cv::Mat& img, int width, int height)
     {
         int optval=height*width*10; //设置缓冲区
         int optLEn=sizeof(int);
         setsockopt(sock,SOL_SOCKET,SO_RCVBUF,(char*)&optval,optLEn);
 
         int buf;
-//        recvfrom(sock,&buf,sizeof(buf),0,(struct sockaddr*)&cli,&len);
+        unsigned char* data = img.data;
+        int flag=300;
+        sendto(sock,&flag,sizeof(flag),0,(struct sockaddr*)&servaddr,sizeof(servaddr));//发送帧头
+        for(int i=0;i<height;i++)
+        {
+            sendto(sock,data+i*width*3,sizeof(unsigned char)*width*3,0,(struct sockaddr*)&servaddr,sizeof(servaddr));//一行一行的发送图像
+        }
     }
     
     ~Socket_pushMsg()
@@ -267,6 +359,22 @@ void t38_39_40_test_init(table_38& t1, table_39& t39, table_40& t40)
 }
 
 
+void t44_init(table_44& t44)
+{
+    t44.header = 0xeb90;
+    t44.data_len = 0x0705;
+    t44.msg_code = 0x8a;
+    
+    
+    strcpy((char*)t44.keep, "66keep");
+}
+
+
+
+
+
+
+
 int main(void)
 {
     //实例化结构体，并赋值
@@ -333,14 +441,31 @@ int main(void)
     std::cout <<"t39 checksum: " << t39.get_checkSum() << std::endl;
     std::cout <<"t40 checksum: " << t40.get_checkSum() << std::endl;
     
-    Socket_pullMsg sp("127.0.0.1", PORT);
+    std::cout << "------------------------------------------------" << std::endl;
+    table_44 t44; // 图像上报
+    t44_init(t44);
     
-    cv::Mat im = cv::Mat(427,640,CV_8UC3);;  // h w
-    sp.pull_image(im, 640, 427);
-    imshow("im",im);
-    cv::waitKey(0);
-    cv::destroyAllWindows();
-    im.release();
+    Socket_pullMsg sp("127.0.0.1", PORT);
+    sp.pull_msg_chunk(t44, 1024);
+
+    int w = 1920;
+    int h = 1080;
+
+    cv::Mat im = ucharArray2Mat(std::move(t44.img_data), w, h, 3);
+//
+//    imshow("im",im);
+//    cv::waitKey(10);
+    
+//    sp.pull_image(im, 640, 427);
+//    imshow("im",im);
+//    cv::waitKey(0);
+//    cv::destroyAllWindows();
+//    im.release();
+//    Socket_pushMsg sp("127.0.0.1", PORT);
+//    cv::Mat frame = cv::imread("/Users/brave_mac/cpp_learn/test_push_img_socket/test_push_img_socket/china.jpg");
+//
+//    sp.push_image(frame, 640, 427);
+    
     
     return 0;
 }

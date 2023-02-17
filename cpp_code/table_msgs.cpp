@@ -677,6 +677,52 @@ uint16_t table_40::get_checkSum()
 // ------------------------ table 38 39 40 ------------------------------------------
 // ------------------------ table 44  image upload msg ------------------------------------------
 
+uint16_t table_44::get_checkSum()
+{
+    long len = sizeof(table_44)-5; //
+    uint8_t buff[len];
+    
+    int idx=0;
+    buff[idx++] = data_len >> 8;
+    buff[idx++] = data_len & 0xff;
 
+    buff[idx++] = msg_code >> 8; //消息代码
+    buff[idx++] = msg_code & 0xff;
+    
+    buff[idx++] = msg_class; //03H 图像信息
+    
+    buff[idx++] = image_id >> 24;
+    buff[idx++] = image_id >> 16;
+    buff[idx++] = image_id >> 8;
+    buff[idx++] = image_id & 0xff;
+    
+    buff[idx++] = pkg_order >> 8; 
+    buff[idx++] = pkg_order & 0xff;
+
+    buff[idx++] = pkg_type;
+    buff[idx++] = pkg_total_num;
+    
+//    for(const auto &c: img_data) buff[idx++] = c; // img data
+    for(int i=0; i<this->width * this->height * this->channel; i++)
+        buff[idx++] = img_data[i];
+    
+    for(const auto &c: keep) buff[idx++] = c; // 预留
+    assert(idx==len); //check!
+        
+    uint16_t crc = do_crc_checkSum(buff, len);
+    
+    return crc;
+}
+
+table_44::table_44()
+{
+//    img_data = new unsigned char[this->width*this->height*this->channel];
+    img_data = std::make_unique<unsigned char[]>(this->width*this->height*this->channel);
+}
+
+table_44::~table_44()
+{
+//    delete []img_data;
+}
 
 // ------------------------ table 44  image upload msg ------------------------------------------

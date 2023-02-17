@@ -13,7 +13,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-
+#include <memory>
 
 
 template<typename T>
@@ -399,6 +399,14 @@ struct table_40    // object detection device‘s ability query.  return msg.
 #pragma pack(push,1)
 struct table_44    // object detection device‘s ability query.  return msg.
 {
+    table_44();
+    ~table_44();
+    const static int width   =1920;
+    const static int height  =1080;
+    const static int channel = 3;
+    
+    uint16_t get_checkSum(); //成员函数不占空间
+    
     uint16_t header; //帧头
     uint16_t data_len; //数据长度
     uint16_t msg_code;  //消息代码
@@ -410,17 +418,18 @@ struct table_44    // object detection device‘s ability query.  return msg.
     
     uint8_t pkg_total_num;
     
-    unsigned char data[1920*1080*3];  //具体数据
+    std::unique_ptr<unsigned char[]> img_data;
+//      unsigned char* img_data;  //数据，太大爆了size + 8
     
     unsigned char keep[6]; // 预留
     uint16_t checkSum; //#校验和
-    uint8_t tail;  //#帧尾
+    uint8_t tail=0xAA;  //#帧尾
     
     
-    uint16_t get_checkSum(); //成员函数不占空间
     
 };
 #pragma pack(pop)
+
 // ------------------------ table 44  image upload msg ------------------------------------------
 
 
