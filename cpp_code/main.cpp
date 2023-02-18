@@ -97,7 +97,7 @@ public:
         }
         //        unsigned char buffer[buff_size];
         socklen_t len = sizeof(pulladdr);
-        int ret = recvfrom(sockrc, table, sizeof(T), 0, (struct sockaddr*)&pulladdr, &len);
+        int ret = recvfrom(sockrc, &table, sizeof(T), 0, (struct sockaddr*)&pulladdr, &len);
     }
     
     void pull_image(cv::Mat& im, int width, int height) //接收图像
@@ -128,7 +128,7 @@ public:
             memcpy(im.data,data,sizeof(unsigned char)*width*height*3);
         }
         
-        delete []data; // for new 
+        delete []data; // for new
     }
     
     bool get_flag() //是否可以接收消息
@@ -377,69 +377,69 @@ void t44_init(table_44& t44)
 
 int main(void)
 {
-    //实例化结构体，并赋值
-    table_28 t28;
-    table_33 t33;
-    t28_33_test_init(t28, t33);
-    
-    Socket_pushMsg sock("127.0.0.1", PORT);
-    sock.send_msg<table_28>(t28);
-    sock.send_msg<table_33>(t33);
-        
-    if (t28.is_equal())
-    {
-        std::cout << "check out is ok!" << std::endl;
-    }else
-    {
-        std::cout << "check out fails!" << std::endl;
-    }
-    std::cout <<"t28 checksum: " << t28.checkSum << std::endl;
-    std::cout <<"t33 checksum: " << t33.checkSum << std::endl;
-    
-    std::cout << "------------------------------------------------" << std::endl;
-    table_29 t29;
-    table_34 t34;
-    t29_34_test_init(t29, t34);
-    
-    std::cout <<"t29 checksum: " << t29.get_checkSum() << std::endl;
-    std::cout <<"t34 checksum: " << t34.checkSum << std::endl;
-    
-    
-    std::cout << "------------------------------------------------" << std::endl;
-    table_30 t30;
-    table_35 t35;
-    
-    t30_35_test_init(t30, t35);
-    if (t30.is_equal())
-    {
-        std::cout << "30 check out is ok!" << std::endl;
-    }else
-    {
-        std::cout << "check out fails!" << std::endl;
-    }
-    std::cout <<"t30 checksum: " << t30.get_checkSum() << std::endl;
-    std::cout <<"t35 checksum: " << t35.checkSum << std::endl;
-    std::cout << "------------------------------------------------" << std::endl;
-    table_31 t31;
-    table_36 t36;
-    t31_36_test_init(t31, t36);
-    
-    std::cout <<"t31 checksum: " << t31.get_checkSum() << std::endl;
-    std::cout <<"t36 checksum: " << t36.checkSum << std::endl;
-    
-    std::cout << "------------------------------------------------" << std::endl;
-    table_32 t32;
-    table_37 t37;
-    t32_37_test_init(t32, t37);
-    
-    std::cout << "------------------------------------------------" << std::endl;
-    table_38 t38;
-    table_39 t39;
-    table_40 t40;
-    t38_39_40_test_init(t38, t39, t40);
-    std::cout <<"t38 checksum: " << t38.get_checkSum() << std::endl;
-    std::cout <<"t39 checksum: " << t39.get_checkSum() << std::endl;
-    std::cout <<"t40 checksum: " << t40.get_checkSum() << std::endl;
+//    //实例化结构体，并赋值
+//    table_28 t28;
+//    table_33 t33;
+//    t28_33_test_init(t28, t33);
+//
+//    Socket_pushMsg sock("127.0.0.1", PORT);
+//    sock.send_msg<table_28>(t28);
+//    sock.send_msg<table_33>(t33);
+//
+//    if (t28.is_equal())
+//    {
+//        std::cout << "check out is ok!" << std::endl;
+//    }else
+//    {
+//        std::cout << "check out fails!" << std::endl;
+//    }
+//    std::cout <<"t28 checksum: " << t28.checkSum << std::endl;
+//    std::cout <<"t33 checksum: " << t33.checkSum << std::endl;
+//
+//    std::cout << "------------------------------------------------" << std::endl;
+//    table_29 t29;
+//    table_34 t34;
+//    t29_34_test_init(t29, t34);
+//
+//    std::cout <<"t29 checksum: " << t29.get_checkSum() << std::endl;
+//    std::cout <<"t34 checksum: " << t34.checkSum << std::endl;
+//
+//
+//    std::cout << "------------------------------------------------" << std::endl;
+//    table_30 t30;
+//    table_35 t35;
+//
+//    t30_35_test_init(t30, t35);
+//    if (t30.is_equal())
+//    {
+//        std::cout << "30 check out is ok!" << std::endl;
+//    }else
+//    {
+//        std::cout << "check out fails!" << std::endl;
+//    }
+//    std::cout <<"t30 checksum: " << t30.get_checkSum() << std::endl;
+//    std::cout <<"t35 checksum: " << t35.checkSum << std::endl;
+//    std::cout << "------------------------------------------------" << std::endl;
+//    table_31 t31;
+//    table_36 t36;
+//    t31_36_test_init(t31, t36);
+//
+//    std::cout <<"t31 checksum: " << t31.get_checkSum() << std::endl;
+//    std::cout <<"t36 checksum: " << t36.checkSum << std::endl;
+//
+//    std::cout << "------------------------------------------------" << std::endl;
+//    table_32 t32;
+//    table_37 t37;
+//    t32_37_test_init(t32, t37);
+//
+//    std::cout << "------------------------------------------------" << std::endl;
+//    table_38 t38;
+//    table_39 t39;
+//    table_40 t40;
+//    t38_39_40_test_init(t38, t39, t40);
+//    std::cout <<"t38 checksum: " << t38.get_checkSum() << std::endl;
+//    std::cout <<"t39 checksum: " << t39.get_checkSum() << std::endl;
+//    std::cout <<"t40 checksum: " << t40.get_checkSum() << std::endl;
     
     std::cout << "------------------------------------------------" << std::endl;
     table_44 t44; // 图像上报
@@ -451,11 +451,13 @@ int main(void)
     int w = 1920;
     int h = 1080;
 
-    cv::Mat im = ucharArray2Mat(std::move(t44.img_data), w, h, 3);
-//
-//    imshow("im",im);
-//    cv::waitKey(10);
     
+    std::cout << t44.header << std::endl;
+    cv::Mat im = ucharArray2Mat(t44.img_data.release(), w, h, 3);
+////
+    imshow("im",im);
+    cv::waitKey(5000);
+//
 //    sp.pull_image(im, 640, 427);
 //    imshow("im",im);
 //    cv::waitKey(0);
@@ -469,4 +471,5 @@ int main(void)
     
     return 0;
 }
+
 

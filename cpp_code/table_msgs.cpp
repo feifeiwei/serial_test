@@ -523,7 +523,7 @@ table_37& table_37::operator=(const table_32& t32)
     
     memcpy(keep, t32.keep, 2);; // 预留
 
-    tail = 0xAA; // same    
+    tail = 0xAA; // same
     return *this;
     
 }
@@ -696,7 +696,7 @@ uint16_t table_44::get_checkSum()
     buff[idx++] = image_id >> 8;
     buff[idx++] = image_id & 0xff;
     
-    buff[idx++] = pkg_order >> 8; 
+    buff[idx++] = pkg_order >> 8;
     buff[idx++] = pkg_order & 0xff;
 
     buff[idx++] = pkg_type;
@@ -726,3 +726,4 @@ table_44::~table_44()
 }
 
 // ------------------------ table 44  image upload msg ------------------------------------------
+
