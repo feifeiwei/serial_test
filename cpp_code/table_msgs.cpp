@@ -691,10 +691,10 @@ uint16_t table_44::get_checkSum()
     
     buff[idx++] = msg_class; //03H 图像信息
     
-    buff[idx++] = image_id >> 24;
-    buff[idx++] = image_id >> 16;
-    buff[idx++] = image_id >> 8;
-    buff[idx++] = image_id & 0xff;
+    buff[idx++] = (uint8_t)(image_id >> 24); // there is not necessary explicit cast the type cos buff is uint8.
+    buff[idx++] = (uint8_t)(image_id >> 16);
+    buff[idx++] = (uint8_t)(image_id >> 8);
+    buff[idx++] = (uint8_t)(image_id & 0xff);
     
     buff[idx++] = pkg_order >> 8;
     buff[idx++] = pkg_order & 0xff;

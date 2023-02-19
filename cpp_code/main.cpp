@@ -1,15 +1,13 @@
-#include <sys/socket.h>
-#include <arpa/inet.h>
+
 #include <stdio.h>
-#include <iomanip>
-#include <string.h>
-#include <unistd.h>
+#include <string>
 #include <iostream>
+
 #include "table_msgs.hpp"
+#include "socket_utils.hpp"
 
 
-
-#define PORT 18000
+//#define PORT 18000
 
 cv::Mat ucharArray2Mat(unsigned char* frame_char, int width, int height, int channel)
 {
@@ -23,202 +21,6 @@ cv::Mat ucharArray2Mat(unsigned char* frame_char, int width, int height, int cha
     return image_mat;
 }
 
-
-class Socket_pullMsg
-{
-public:
-    Socket_pullMsg(const char* ip_receive, int port):
-    ip_receive(ip_receive), port(port), flag_pull(true)
-    {
-//      init socket pull msg.
-        sockrc = socket(AF_INET, SOCK_DGRAM, 0);
-        pulladdr.sin_family = AF_INET;
-        pulladdr.sin_port = htons(port);
-        pulladdr.sin_addr.s_addr = inet_addr(ip_receive);
-         //not using std::
-        if (bind(sockrc, (struct sockaddr*)&pulladdr, sizeof(pulladdr))<0)
-        {
-            flag_pull = false;
-        }
-    }
-    void pull_msg_chunk(table_44& t44, int chunk_size=1024)
-    {
-        if(!flag_pull)
-        {
-            std::cerr << "bind fails for socket pull msg." << std::endl;
-            return;
-        }
-        
-        socklen_t len = sizeof(pulladdr);
-        int buffer_len = sizeof(table_44) + table_44::width*table_44::height*table_44::channel - 8; //数据总长度 + new
-//        std::cout << "\nbuffer_len: " << buffer_len << std::endl; //6220824=1080p
-        int chunk = chunk_size; //每次发送长度‘
-        unsigned char* data = new unsigned char[buffer_len];
-        unsigned char* header = data; // make pointer point to header
-        
-        while(buffer_len>chunk){
-            int ret = recvfrom(sockrc, data, chunk, 0, (struct sockaddr*)&pulladdr, &len);
-            buffer_len -= chunk;
-            data += chunk;
-        }
-        
-        if (buffer_len) {
-            int ret = recvfrom(sockrc, data, buffer_len, 0, (struct sockaddr*)&pulladdr, &len);
-        }
-        long idx = 0;
-        t44.header = (header[idx++] << 8) + header[idx++];
-        t44.data_len = (header[idx++] << 8) + header[idx++];
-        t44.msg_code = (header[idx++] << 8) + header[idx++];
-        t44.msg_class = header[idx++];
-        
-        t44.image_id = (header[idx++] << 24)+(header[idx++] << 16) +(header[idx++] << 8) + header[idx++];
-        t44.pkg_order = (header[idx++] << 8) + header[idx++];
-        t44.pkg_type = header[idx++];
-        t44.pkg_total_num = header[idx++];
-
-//        for(auto &c : t44.img_data) c = header[idx++]; // img
-        for(int i=0; i< table_44::width * table_44::height * table_44::channel; i++)
-            t44.img_data[i] = header[idx++];
-        
-        for(auto &c : t44.keep) c = header[idx++]; //
-        
-//        t44.checkSum = t44.get_checkSum();
-    }
-    
-    
-    
-    template<class T>
-    void pull_msg(T& table)
-    {
-        if(!flag_pull)
-        {
-            std::cerr << "bind fails for socket pull msg." << std::endl;
-            return;
-        }
-        //        unsigned char buffer[buff_size];
-        socklen_t len = sizeof(pulladdr);
-        int ret = recvfrom(sockrc, &table, sizeof(T), 0, (struct sockaddr*)&pulladdr, &len);
-    }
-    
-    void pull_image(cv::Mat& im, int width, int height) //接收图像
-    {
-        if(!flag_pull)
-        {
-            std::cerr << "bind fails for socket pull msg." << std::endl;
-            return;
-        }
-        
-        //设置缓冲区
-        int optval=width*height*10;
-        int optLEn=sizeof(int);
-        setsockopt(sockrc,SOL_SOCKET,SO_RCVBUF,(char*)&optval,optLEn);
-        
-        int buffer;
-        socklen_t len = sizeof(pulladdr);
-        recvfrom(sockrc,&buffer,sizeof(buffer),0,(struct sockaddr*)&pulladdr,&len);
-        
-        unsigned char *data=new unsigned char[height*width*3];
-        
-        if(buffer==300)
-        {
-            for(int i=0;i<height;i=i+1)
-            {//如果未发生错误， recvfrom 将返回收到的字节数
-              recvfrom(sockrc,data+i*width*3,sizeof(unsigned char)*width*3,0,(struct sockaddr*)&pulladdr,&len);
-             }
-            memcpy(im.data,data,sizeof(unsigned char)*width*height*3);
-        }
-        
-        delete []data; // for new
-    }
-    
-    bool get_flag() //是否可以接收消息
-    {
-        return flag_pull;
-    }
-    
-    ~Socket_pullMsg()
-    {
-        close(sockrc);
-    }
-    
-    
-private:
-    
-    std::string ip_receive;
-    int port;
-    bool flag_pull; //是否可以拉取数据
-    
-    struct sockaddr_in pulladdr;
-    int sockrc; //定义socket套字 接收消息，图像等
-    
-};
-
-
-class Socket_pushMsg
-{
-public:
-    Socket_pushMsg(const char* ip_send, int port):
-    ip_send(ip_send), port(port)
-    {
-        memset(&servaddr, 0, sizeof(servaddr)); //把servaddr内存清零
-        sock = socket(AF_INET, SOCK_DGRAM, 0);
-        servaddr.sin_family = AF_INET;
-        servaddr.sin_port = htons(port);
-        servaddr.sin_addr.s_addr = inet_addr(ip_send);
-    }
-    
-    template<class T>
-    void send_msg_chunk(T& table, int chunk_size=1024) //分断发送
-    {
-        int buffer_len = sizeof(T);
-        int chunk = chunk_size; //每次发送长度
-    
-        unsigned char* data = reinterpret_cast<unsigned char*>(&table);
-        
-        while (buffer_len>chunk) {
-            int ret = sendto(sock, data, chunk, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
-            buffer_len -= chunk;
-            data = data + chunk;
-        }
-        if(buffer_len){
-            int ret = sendto(sock, &table, buffer_len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
-        }
-    }
-    
-    
-    template<class T>
-    void send_msg(T& table) //一次性发送
-    {
-        sendto(sock, &table, sizeof(T), 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
-    }
-    
-    void push_image(cv::Mat& img, int width, int height)
-    {
-        int optval=height*width*10; //设置缓冲区
-        int optLEn=sizeof(int);
-        setsockopt(sock,SOL_SOCKET,SO_RCVBUF,(char*)&optval,optLEn);
-
-        int buf;
-        unsigned char* data = img.data;
-        int flag=300;
-        sendto(sock,&flag,sizeof(flag),0,(struct sockaddr*)&servaddr,sizeof(servaddr));//发送帧头
-        for(int i=0;i<height;i++)
-        {
-            sendto(sock,data+i*width*3,sizeof(unsigned char)*width*3,0,(struct sockaddr*)&servaddr,sizeof(servaddr));//一行一行的发送图像
-        }
-    }
-    
-    ~Socket_pushMsg()
-    {
-        close(sock);
-    }
-    
-private:
-    std::string ip_send;
-    int port;
-    struct sockaddr_in servaddr;
-    int sock; //定义socket套字，  发送消息，图像等
-};
 
 
 void t28_33_test_init(table_28& t28, table_33& t33)
@@ -239,8 +41,9 @@ void t28_33_test_init(table_28& t28, table_33& t33)
     t28.tail= 0xaa;
     
     t33 = t28;
-    t33.error_msg = 0x00;
-    t33.checkSum = t33.get_checkSum();
+//    t33.error_msg = 0x0;
+//
+//    t33.checkSum = t33.get_checkSum();
 }
 
 void t29_34_test_init(table_29& t29, table_34& t34)
@@ -375,24 +178,202 @@ void t44_init(table_44& t44)
 
 
 
-int main(void)
+int main(int argc, const char *argv[])
 {
-//    //实例化结构体，并赋值
-//    table_28 t28;
-//    table_33 t33;
-//    t28_33_test_init(t28, t33);
+    if(argc!=5)
+    {
+        std::cout << "Usage: ./run_demo <t28> <ip> <pull_port> <push_port>" << std::endl;
+        return 1;
+    }
+    
+    const std::string test_config = argv[1];
+    const std::string _ip = argv[2];
+    const std::string pull_port = argv[3];
+    const std::string push_port = argv[4];
+    
+    Socket_pullMsg gt(_ip.c_str(), atoi(pull_port.c_str()));
+    Socket_pushMsg ps(_ip.c_str(), atoi(push_port.c_str()));
+    
+    
+    if (test_config=="t28")
+    {
+        //实例化结构体，并赋值
+        table_28 t28;
+        table_33 t33;
+        
+        std::cout <<"waiting for t28 msg..." << std::endl;
+        gt.pull_msg<table_28>(t28);
+        t33 = t28;
+        if (t28.is_equal())
+        {
+            t33.error_msg = 0x0;
+            std::cout << "check out is ok!" << std::endl;
+        }else
+        {
+            t33.error_msg = 0x1;
+            std::cout << "check out fails!" << std::endl;
+        }
+        
+        t33.checkSum = t33.get_checkSum();
+        std::cout <<"pushing t33 msg..." << std::endl;
+        ps.push_msg<table_33>(t33);
+    }
+    else if(test_config=="t29")
+    {
+        
+        table_29 t29;
+        table_34 t34;
+        std::cout <<"waiting for t29 msg..." << std::endl;
+        gt.pull_msg<table_29>(t29);
+        t34 = t29;
+        if (t29.is_equal()) {
+            t34.error_msg = 0x0;
+            std::cout << "check out is ok!" << std::endl;
+        }else{
+            t34.error_msg = 0x1;
+            std::cout << "check out fails!" << std::endl;
+        }
+        
+        t34.checkSum = t34.get_checkSum();
+        std::cout <<"pushing t34 msg..." << std::endl;
+        
+        ps.push_msg<table_34>(t34);
+    }
+    else if(test_config=="t30")
+    {
+        
+        table_30 t30;
+        table_35 t35;
+        std::cout <<"waiting for t30 msg..." << std::endl;
+        gt.pull_msg<table_30>(t30);
+        t35 = t30;
+        if (t30.is_equal()) {
+            t35.error_msg = 0x0;
+            std::cout << "check out is ok!" << std::endl;
+        }else{
+            t35.error_msg = 0x1;
+            std::cout << "check out fails!" << std::endl;
+        }
+        
+        t35.checkSum = t35.get_checkSum();
+        std::cout <<"pushing t35 msg..." << std::endl;
+        
+        ps.push_msg<table_35>(t35);
+    }
+    else if(test_config=="t31")
+    {
+        
+        table_31 t31;
+        table_36 t36;
+        std::cout <<"waiting for t31 msg..." << std::endl;
+        gt.pull_msg<table_31>(t31);
+        t36 = t31;
+        if (t31.is_equal()) {
+            t36.error_msg = 0x0;
+            std::cout << "check out is ok!" << std::endl;
+        }else{
+            t36.error_msg = 0x1;
+            std::cout << "check out fails!" << std::endl;
+        }
+        
+        t36.checkSum = t36.get_checkSum();
+        std::cout <<"pushing t36 msg..." << std::endl;
+        
+        ps.push_msg<table_36>(t36);
+    }
+    else if(test_config=="t32")
+    {
+        
+        table_32 t32;
+        table_37 t37;
+        std::cout <<"waiting for t32 msg..." << std::endl;
+        gt.pull_msg<table_32>(t32);
+        t37 = t32;
+        if (t32.is_equal()) {
+            t37.error_msg = 0x0;
+            std::cout << "check out is ok!" << std::endl;
+        }else{
+            t37.error_msg = 0x1;
+            std::cout << "check out fails!" << std::endl;
+        }
+        
+        t37.checkSum = t37.get_checkSum();
+        std::cout <<"pushing t37 msg..." << std::endl;
+        
+        ps.push_msg<table_37>(t37);
+    }
+    
+    else if(test_config=="t38")// 38，29，40
+    {
+        
+        table_38 t38;
+        table_39 t39;
+        table_40 t40;
+        std::cout <<"waiting for t38 msg..." << std::endl;
+        gt.pull_msg<table_38>(t38);
+
+        if (t38.is_equal()) {
+//            t37.error_msg = 0x0;
+            std::cout << "check out is ok!" << std::endl;
+        }else{
+//            t37.error_msg = 0x1;
+            std::cout << "check out fails!" << std::endl;
+        }
+        
+//        t37.checkSum = t37.get_checkSum();
+        
+        if(t38.query_type== 0x01)
+        {
+            std::cout <<"pushing t39 msg..." << std::endl;
+            ps.push_msg<table_39>(t39);
+        }
+        else if(t38.query_type == 0x02)
+        {
+            std::cout <<"pushing t40 msg..." << std::endl;
+            ps.push_msg<table_40>(t40);
+        }else
+        {
+            std::cout <<"error pushing msg for ... query type = "<< +t38.query_type << std::endl;
+        }
+    }
+    else if(test_config=="t44")// upload image
+    {
+        
+        std::cout <<"upload image testing..." << std::endl;
+        cv::Mat im = cv::imread("/Users/feifeiwei/dog.jpg"); // need change
+        std::cout <<"image info: " << im.cols <<" " << im.rows << std::endl;
+        table_44 t44;
+        int w = 1920;
+        int h = 1080;
+        unsigned char *data = new unsigned char[w*h*3];//im.data;
+        memcpy(data, im.data, h*w*3);
+        
+        t44.header = 0x1234;
+        t44.img_data.reset(data);
+        
+        ps.push_msg_t44(t44, 1024);
+//        auto p = t44.img_data.release();
+    //    cv::Mat image_mat = cv::Mat(1080, 1920, CV_8UC3, p);//
+    //    cv::imshow("sss", image_mat);
+    //    cv::waitKey(5000);
+    //    delete p;
+        
+    }
+    
+
+//    std::cout << t28.checkSum << std::endl;
+//    std::cout << t33.get_checkSum()<< " " << t33.checkSum << std::endl;
+    
+    
+    
+    
+    
 //
 //    Socket_pushMsg sock("127.0.0.1", PORT);
 //    sock.send_msg<table_28>(t28);
 //    sock.send_msg<table_33>(t33);
 //
-//    if (t28.is_equal())
-//    {
-//        std::cout << "check out is ok!" << std::endl;
-//    }else
-//    {
-//        std::cout << "check out fails!" << std::endl;
-//    }
+    
 //    std::cout <<"t28 checksum: " << t28.checkSum << std::endl;
 //    std::cout <<"t33 checksum: " << t33.checkSum << std::endl;
 //
@@ -441,22 +422,22 @@ int main(void)
 //    std::cout <<"t39 checksum: " << t39.get_checkSum() << std::endl;
 //    std::cout <<"t40 checksum: " << t40.get_checkSum() << std::endl;
     
-    std::cout << "------------------------------------------------" << std::endl;
-    table_44 t44; // 图像上报
-    t44_init(t44);
-    
-    Socket_pullMsg sp("127.0.0.1", PORT);
-    sp.pull_msg_chunk(t44, 1024);
-
-    int w = 1920;
-    int h = 1080;
-
-    
-    std::cout << t44.header << std::endl;
-    cv::Mat im = ucharArray2Mat(t44.img_data.release(), w, h, 3);
-////
-    imshow("im",im);
-    cv::waitKey(5000);
+//    std::cout << "------------------------------------------------" << std::endl;
+//    table_44 t44; // 图像上报
+//    t44_init(t44);
+//
+//    Socket_pullMsg sp("127.0.0.1", PORT);
+//    sp.pull_msg_chunk(t44, 1024);
+//
+//    int w = 1920;
+//    int h = 1080;
+//
+//
+//    std::cout << t44.header << std::endl;
+//    cv::Mat im = ucharArray2Mat(t44.img_data.release(), w, h, 3);
+//////
+//    imshow("im",im);
+//    cv::waitKey(5000);
 //
 //    sp.pull_image(im, 640, 427);
 //    imshow("im",im);
