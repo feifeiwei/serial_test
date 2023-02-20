@@ -22,6 +22,9 @@ int split_char(unsigned char*);
 
 uint16_t do_crc_checkSum(uint8_t* buff, uint16_t len);
 
+//数组倒序，接收数组首元素地址，无返回值
+void reverse(unsigned char * a,int n);
+
 // ------------------------ table 28 33 ------------------------------------------
 // tabel 28 basic control msg
 #pragma pack(push,1)
@@ -96,7 +99,7 @@ struct table_29    // control msg
     uint8_t minimum_width; // for obj detect minimum bbox w.
     
     uint8_t unknown_det_begin; //
-    unsigned char keep[5]; // 预留
+    unsigned char keep[4]; // 预留
     
     uint16_t checkSum; //#校验和
     uint8_t tail;  //#帧尾
@@ -127,7 +130,7 @@ struct table_34    // control msg
     
     uint8_t unknown_det_begin; //
 
-    unsigned char keep[5]; // 预留
+    unsigned char keep[4]; // 预留
     uint8_t error_msg;  //#错误码
     uint16_t checkSum; //#校验和
     uint8_t tail;  //#帧尾
@@ -203,12 +206,11 @@ struct table_31    // object alart msg
     uint16_t msg_code;  //消息代码
     uint8_t control_type;
     
-    
     uint8_t alart_isBegin;     // object detector start or stop. 00=stop 01=strat
-    unsigned char alart_port[24];    // object pattern  
+    unsigned char alart_port[24];    // object pattern
     uint8_t alart_trigger_mode; //
-    uint8_t alart_classes;  //可变长度 数据长度-（消息代码~预留）------
-    // unsigned char alart_classes[512];
+//    uint8_t alart_classes[80];   // 变长的  默认80个字节长度。
+    std::vector<uint8_t> alart_classes;
     uint8_t alart_threat_level;   //
     uint8_t unknownObj_alart_conf; //
     uint16_t alart_free; //
@@ -218,7 +220,11 @@ struct table_31    // object alart msg
     uint16_t checkSum; //#校验和
     uint8_t tail;  //#帧尾
     
+    int buffer_len = 120; // 默认长度
+    std::unique_ptr<unsigned char[]> raw_data = std::make_unique<unsigned char[]>(buffer_len);  //处理变长数据
+    
     uint16_t get_checkSum(); //成员函数不占空间
+    void set_value(); // 将raw_data 回到 每个成员变量
     bool is_equal(); //校验和是否一致。
 };
 #pragma pack(pop)
@@ -236,7 +242,8 @@ struct table_36    // object alart msg
     uint8_t alart_isBegin;     // object detector start or stop. 00=stop 01=strat
     unsigned char alart_port[24];    // object pattern
     uint8_t alart_trigger_mode; //
-    uint8_t alart_classes;
+//    uint8_t alart_classes;
+    std::vector<uint8_t> alart_classes;
     uint8_t alart_threat_level;   //
     uint8_t unknownObj_alart_conf; //
     uint16_t alart_free; //
@@ -245,6 +252,9 @@ struct table_36    // object alart msg
     uint8_t error_msg; //错误码
     uint16_t checkSum; //#校验和
     uint8_t tail;  //#帧尾
+    
+    int buffer_len = 120; // 默认长度
+    std::unique_ptr<unsigned char[]> raw_data = std::make_unique<unsigned char[]>(buffer_len);  //处理变长数据
     
     uint16_t get_checkSum(); //成员函数不占空间
     table_36& operator=(const table_31& t31);
@@ -261,14 +271,19 @@ struct table_32    // object detection classes control msg
     uint16_t msg_code;  //消息代码
     uint8_t control_type;
         
-    uint8_t obj_classes;     // see appendix 2
+//    uint8_t obj_classes;     // see appendix 2
+    std::vector<uint8_t> obj_classes;
 
     unsigned char keep[2]; // 预留
     
     uint16_t checkSum; //#校验和
     uint8_t tail;  //#帧尾
     
+    int buffer_len = 120; // 默认长度
+    std::unique_ptr<unsigned char[]> raw_data = std::make_unique<unsigned char[]>(buffer_len);
+    
     uint16_t get_checkSum(); //成员函数不占空间
+    void set_value(); // 将raw_data 回到 每个成员变量
     bool is_equal(); //校验和是否一致。
 };
 #pragma pack(pop)
@@ -281,12 +296,16 @@ struct table_37    // object detection classes control msg
     uint16_t msg_code;  //消息代码
     uint8_t control_type;
         
-    uint8_t obj_classes;     // see appendix 2
-
+//    uint8_t obj_classes;     // see appendix 2
+    std::vector<uint8_t> obj_classes;
+    
     unsigned char keep[2]; // 预留
     uint8_t error_msg;
     uint16_t checkSum; //#校验和
     uint8_t tail;  //#帧尾
+    
+    int buffer_len = 120; // 默认长度
+    std::unique_ptr<unsigned char[]> raw_data = std::make_unique<unsigned char[]>(buffer_len);  //处理变长数据
     
     uint16_t get_checkSum(); //成员函数不占空间
     table_37& operator=(const table_32& t32);
@@ -295,7 +314,7 @@ struct table_37    // object detection classes control msg
 
 
 // ------------------------ table 32 37 ------------------------------------------
-// ------------------------ table 38 39 ------------------------------------------
+// ------------------------ table 38 39 40 ------------------------------------------
 // device condition query.
 
 #pragma pack(push,1)
@@ -324,8 +343,9 @@ struct table_39    // object detection device‘s condition query.  return msg.
     uint16_t header; //帧头
     uint16_t data_len; //数据长度
     uint16_t msg_code;  //消息代码
-        
-    uint8_t feedback_type;  // device condition feedback.
+    uint8_t feedback_type;  //状态查询反馈
+    uint8_t device_condition; // device condition feedback.
+    
     unsigned char data_source[96];
     uint8_t device_stop_status;
     
@@ -347,7 +367,9 @@ struct table_39    // object detection device‘s condition query.  return msg.
     uint8_t alart_func_status;
     unsigned char alart_port[24];    // object pattern
     uint8_t alart_trigger_mode; //
-    uint8_t alart_classes;
+//    uint8_t alart_classes;
+    std::vector<uint8_t> alart_classes;
+    
     uint8_t alart_threat_level;   //
     uint8_t unknownObj_alart_conf; //
     
@@ -355,7 +377,11 @@ struct table_39    // object detection device‘s condition query.  return msg.
     uint8_t error_msg;
     uint16_t checkSum; //#校验和
     uint8_t tail;  //#帧尾
-    
+
+    int buffer_len = 120; // 默认长度
+    std::unique_ptr<unsigned char[]> raw_data;// = std::make_unique<unsigned char[]>(buffer_len);  //处理变长数据
+    void set_buffer();  //for push msg.
+    table_39& operator=(const table_38& t38); // set basic info fisrt.
     uint16_t get_checkSum(); //成员函数不占空间
 };
 #pragma pack(pop)
@@ -388,6 +414,7 @@ struct table_40    // object detection device‘s ability query.  return msg.
     uint16_t checkSum; //#校验和
     uint8_t tail;  //#帧尾
     
+    table_40& operator=(const table_38& t38); // set basic info fisrt.
     uint16_t get_checkSum(); //成员函数不占空间
 };
 #pragma pack(pop)

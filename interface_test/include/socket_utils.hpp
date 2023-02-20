@@ -34,7 +34,7 @@ public:
         int chunk = chunk_size; //每次发送长度‘
         unsigned char* data = new unsigned char[buffer_len];
 //        unsigned char* header = data; // make pointer point to header
-        std::cout <<"buff len= " << buffer_len << std::endl;
+//        std::cout <<"buff len= " << buffer_len << std::endl;
         
         long idx = 0;
         data[idx++] = t44.header >> 8;
@@ -91,6 +91,16 @@ public:
         }
     }
     
+    void push_msg_39(std::unique_ptr<unsigned char[]>& raw_data, int buff_len)
+    {
+        if(buff_len){
+            
+            auto *p = raw_data.get();
+            ssize_t ret = sendto(sock, p, buff_len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
+            assert(ret>0);
+            std::cout << ret << std::endl;
+        }
+    }
     
     
     template<class T>
@@ -119,16 +129,8 @@ public:
     {
         ssize_t ret = sendto(sock, &table, sizeof(T), 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
         assert(ret>0);
+        
     }
-
-
-    void push_msg(const unsigned char* data, int buf_len)
-    {
-        ssize_t ret = sendto(sock, data, buf_len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
-        assert(ret>0);
-    }
-
-
     
     void push_image(const cv::Mat& img, int width, int height)
     {
@@ -223,6 +225,52 @@ public:
 //        t44.checkSum = t44.get_checkSum();
     }
     
+    void pull_msg_t32(std::unique_ptr<unsigned char[]>& data, int& buf_len)
+    {
+        if(!flag_pull)
+        {
+           std::cerr << "bind fails for socket pull msg." << std::endl;
+           return;
+        }
+        unsigned char* data_ptr = data.get();
+        
+        socklen_t len = sizeof(pulladdr);
+        int ret = recvfrom(sockrc, data_ptr, buf_len, 0, (struct sockaddr*)&pulladdr, &len);
+        assert(ret>0);
+        
+        // cal the true buff length.
+        int idx_tail=0;
+        for (int idx_tail=0; idx_tail < buf_len; idx_tail++)
+        {
+            if (data[idx_tail] == 0xaa) break;
+        }
+        buf_len = idx_tail; // true length. end to 0xaa;
+        
+    }
+    
+    void pull_msg_t31(std::unique_ptr<unsigned char[]>& data, int& buf_len) // pull buf_len default.
+    {
+        if(!flag_pull)
+        {
+           std::cerr << "bind fails for socket pull msg." << std::endl;
+           return;
+        }
+        
+        
+        unsigned char* data_ptr = data.get();
+        
+        socklen_t len = sizeof(pulladdr);
+        int ret = recvfrom(sockrc, data_ptr, buf_len, 0, (struct sockaddr*)&pulladdr, &len);
+        assert(ret>0);
+        
+        // cal the true buff length.
+        int idx_tail=0;
+        for (int idx_tail=0; idx_tail < buf_len; idx_tail++)
+        {
+            if (data[idx_tail] == 0xaa) break;
+        }
+        buf_len = idx_tail; // true length. end to 0xaa;
+    }
     
     
     template<class T>
@@ -237,87 +285,6 @@ public:
         socklen_t len = sizeof(pulladdr);
         int ret = recvfrom(sockrc, &table, sizeof(T), 0, (struct sockaddr*)&pulladdr, &len);
     }
-
-//类  50ce
-//144 235 43 0 5 7 3 1 48 48 48 48 48 49 57 50 46 49 54 56 46 49 46 50 48 48 58 49 56 48 48 48 1 1 2 3 4 5 0 1 100 200 1 48 48 48 49 206 80 170
-    void pull_msg(unsigned char*& data, int& buffer_len, unsigned char*& return_data36) // buffer_len return 36 len
-    {
-        
-        // int buffer_len = 1024;
-        data = new unsigned char[buffer_len];
-        unsigned char* header = data;
-
-         if(!flag_pull)
-        {
-            std::cerr << "bind fails for socket pull msg." << std::endl;
-            return;
-        }
-
-        socklen_t len = sizeof(pulladdr);
-        int ret = recvfrom(sockrc, data, buffer_len, 0, (struct sockaddr*)&pulladdr, &len);
-
-        assert(ret>0);
-
-        int idx_tail=0;
-        std::cout<<"infoc: " << std::endl;
-        for(; idx_tail!=buffer_len; idx_tail++)
-        {
-
-            std::cout  << +header[idx_tail] <<" " ;
-            if (header[idx_tail] == 0xaa) break;
-        } 
-
-        std::cout<<std::endl;
-
-        unsigned char* data_checksum = new unsigned char[idx_tail-5];
-
-        for(int i=2; i<idx_tail-3; i++){
-            data_checksum[i-2]  = header[i];
-            std::cout <<"++> " << +header[i] << std::endl;
-        }
-
-        data_checksum[idx_tail-4] = data_checksum[idx_tail-7]; // 字符串按小端解。 test
-        data_checksum[idx_tail-7] = data_checksum[idx_tail-5];
-
-
-
-        uint16_t t31_checksum = (header[idx_tail-1]<<8) + header[idx_tail-2];
-        uint16_t my_checksum = do_crc_checkSum(data_checksum, idx_tail-5); // 43
-
-
-        std::cout <<"len checksum " << idx_tail-5 << std::endl;
-
-        std::cout <<idx_tail <<  "t31 checkSum: " <<  +t31_checksum << std::endl; // 50ce
-        std::cout <<idx_tail <<  "my t31 checkSum: " <<  +my_checksum << std::endl; // 50ce
-
-        std::cout <<idx_tail <<  "-----------------------right??-----------------------------" << std::endl;
-
-        return_data36 = new unsigned char[idx_tail+1]; // + error_msg
-        unsigned char* data36_checksum = new unsigned char[idx_tail-4];
-
-        
-       
-
-        for(int i=0; i<idx_tail-2; i++) //到预留结束
-            return_data36[i] = header[i];
-
-        return_data36[idx_tail-2] = 0x01; // 错误码
-        return_data36[idx_tail] = 0xaa;   // 帧尾
-
-
-        for(int i=2; i<idx_tail-2; i++)
-            data36_checksum[i-2]  = return_data36[i];
-
-        uint16_t t36_checksum = do_crc_checkSum(data_checksum, idx_tail+1-5);
-        std::cout <<idx_tail <<  "my t36 checkSum: " <<  +t36_checksum << std::endl; // 3f85
-
-        return_data36[idx_tail-1] = t36_checksum<<8;
-        return_data36[idx_tail-2] = t36_checksum&0xff;
-
-        buffer_len = idx_tail;
-
-    }
-
     
     void pull_image(cv::Mat& im, int width, int height) //接收图像
     {
