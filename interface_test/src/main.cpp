@@ -25,9 +25,9 @@ cv::Mat ucharArray2Mat(unsigned char* frame_char, int width, int height, int cha
 
 void t28_33_test_init(table_28& t28, table_33& t33)
 {
-    t28.header = 0x90eb;
+    t28.header = 0xeb90;
     t28.data_len = 0x0705;
-    t28.msg_code = 0x0005;
+    t28.msg_code = 0x8a;
     t28.control_type = 0x0;
     t28.device_ssr = 0x1;
     t28.device_running_mode = 0x2;
@@ -111,7 +111,7 @@ void t31_36_test_init(table_31& t1, table_36& t2)
     t1.alart_isBegin = 0x0;     // object detector start or stop. 00=stop 01=strat
     strcpy((char*)t1.alart_port, "00000192.168.1.200:18000");
     t1.alart_trigger_mode = 0x0; //
-    t1.alart_classes = 0x0;
+//    t1.alart_classes = 0x0;
     t1.alart_threat_level = 0x0;   //
     t1.unknownObj_alart_conf = 0x0; //
     t1.alart_free = 0x0; //
@@ -135,7 +135,7 @@ void t32_37_test_init(table_32& t1, table_37& t2)
     t1.msg_code = 0x8a;
     t1.control_type = 0x0;
     
-    t1.obj_classes = 0x32;
+//    t1.obj_classes = 0x32;
     
     strcpy((char*)t1.keep, "keep"); //4bit
     
@@ -191,8 +191,12 @@ int main(int argc, const char *argv[])
     // const std::string pull_port = argv[3];
     // const std::string push_port = argv[4];
     
+//
     Socket_pullMsg gt("192.168.1.200", 18000);//atoi(pull_port.c_str()));
     Socket_pushMsg ps("192.168.1.205", 10000);//atoi(push_port.c_str()));
+    
+//    Socket_pullMsg gt("127.0.0.1", 18000);
+//    Socket_pushMsg ps("127.0.0.1", 18000);
     
     
     if (test_config=="t28")
@@ -203,9 +207,7 @@ int main(int argc, const char *argv[])
         
         std::cout <<"waiting for t28 msg..." << std::endl;
         gt.pull_msg<table_28>(t28);
-
         t33 = t28;
-
         if (t28.is_equal())
         {
             t33.error_msg = 0x0;
@@ -213,18 +215,13 @@ int main(int argc, const char *argv[])
         }else
         {
             t33.error_msg = 0x1;
-            std::cout << "check out fails!" <<  std::endl; //ab0c
+            std::cout << "check out fails!" << std::endl;
         }
         
         t33.checkSum = t33.get_checkSum();
-        // t33.checkSum = ((t33.checkSum&0xff) << 8) + (t33.checkSum>>8); //改变成小端发送, 怎么自动改小端了？
-
-        // std::cout <<"pushing t33 msg..." << std::endl;
+        std::cout <<"pushing t33 msg..." << std::endl;
         ps.push_msg<table_33>(t33);
-        // std::cout << "28 check: " << t28.checkSum << ", " <<  t28.get_checkSum() << std::endl;
-        // std::cout << "33 check: " << t33.checkSum << std::endl;
     }
-
     else if(test_config=="t29")
     {
         
@@ -233,7 +230,6 @@ int main(int argc, const char *argv[])
         std::cout <<"waiting for t29 msg..." << std::endl;
         gt.pull_msg<table_29>(t29);
         t34 = t29;
-
         if (t29.is_equal()) {
             t34.error_msg = 0x0;
             std::cout << "check out is ok!" << std::endl;
@@ -246,9 +242,7 @@ int main(int argc, const char *argv[])
         std::cout <<"pushing t34 msg..." << std::endl;
         
         ps.push_msg<table_34>(t34);
-        // std::cout << "29 check: " << t29.checkSum << ", " <<  t29.get_checkSum() << std::endl;
     }
-
     else if(test_config=="t30")
     {
         
@@ -275,48 +269,85 @@ int main(int argc, const char *argv[])
         
         table_31 t31;
         table_36 t36;
+        
         std::cout <<"waiting for t31 msg..." << std::endl;
-        // gt.pull_msg<table_31>(t31); 
+        gt.pull_msg_t31(t31.raw_data, t31.buffer_len);
+//        int idx = 0;
+//        t31.raw_data[idx++] = 144;
+//        t31.raw_data[idx++] = 235;
+//        t31.raw_data[idx++] = 43;
+//        t31.raw_data[idx++] = 0;
+//        t31.raw_data[idx++] = 5;
+//        t31.raw_data[idx++] = 7;
+//        t31.raw_data[idx++] = 3;
+//        t31.raw_data[idx++] = 1;
+//        t31.raw_data[idx++] = 48;
+//        t31.raw_data[idx++] = 48;
+//        t31.raw_data[idx++] = 48;
+//        t31.raw_data[idx++] = 48;
+//        t31.raw_data[idx++] = 48;
+//        t31.raw_data[idx++] = 49;
+//        t31.raw_data[idx++] = 57;
+//        t31.raw_data[idx++] = 50;
+//        t31.raw_data[idx++] = 46;
+//        t31.raw_data[idx++] = 49;
+//        t31.raw_data[idx++] = 54;
+//        t31.raw_data[idx++] = 56;
+//        t31.raw_data[idx++] = 46;
+//        t31.raw_data[idx++] = 49;
+//        t31.raw_data[idx++] = 46;
+//        t31.raw_data[idx++] = 50;
+//        t31.raw_data[idx++] = 48;
+//        t31.raw_data[idx++] = 48;
+//        t31.raw_data[idx++] = 58;
+//        t31.raw_data[idx++] = 49;
+//
+//        t31.raw_data[idx++] = 56;
+//        t31.raw_data[idx++] = 48;
+//        t31.raw_data[idx++] = 48;
+//        t31.raw_data[idx++] = 48;
+//
+//        t31.raw_data[idx++] = 1;
+//        t31.raw_data[idx++] = 1;
+//        t31.raw_data[idx++] = 2;
+//        t31.raw_data[idx++] = 3;
+//        t31.raw_data[idx++] = 4;
+//        t31.raw_data[idx++] = 5;
+//        t31.raw_data[idx++] = 0;
+//        t31.raw_data[idx++] = 1;
+//        t31.raw_data[idx++] = 100;
+//        t31.raw_data[idx++] = 200;
+//        t31.raw_data[idx++] = 1;
+//
+//        t31.raw_data[idx++] = 48;
+//        t31.raw_data[idx++] = 48;
+//        t31.raw_data[idx++] = 48;
+//        t31.raw_data[idx++] = 49;
+//
+//        t31.raw_data[idx++] = 206;
+//        t31.raw_data[idx++] = 80;
+//        t31.raw_data[idx++] = 170;
+//        t31.buffer_len = 50;
         
-        unsigned char* data31;
-        unsigned char* data36;
-        int buf_len = 120;
-        gt.pull_msg(data31, buf_len, data36); // //可变长度
-
-        ps.push_msg(data36, buf_len);
-
-        // do_crc_checkSum(uint8_t* buff, uint16_t len)
+        t31.set_value();
+        t36= t31;
         
-
-        // uint16_t t31_checksum = (data[idx_tail-1] <<8) +  data[idx_tail-2]; //t31 校验位
-
-        // unsigned char* data_checksum = new unsigned char[idx_tail-5];
-
-        // for(int i=2; i<idx_tail-5; i++)
-        //     data_checksum[i-2]  = data[i];
-
-        // uint16_t my_t31_checksum = do_crc_checkSum(data_checksum, idx_tail-5);
-
-        // uint16_t data_len = (data[2] << 8) +  data[3];
-
-        // std::cout << "data length: " <<  data_len << std::endl;
+//        uint16_t checksum = t31.checkSum;
+//        uint16_t my_checksum =  t31.get_checkSum();
         
-        // std::cout << "t31 my checkSum: " <<  my_t31_checksum << std::endl;
+//        std::cout << "31 ch_sum : " << checksum <<" " << my_checksum << std::endl;
+//        std::cout << "36 ch_sum : " << t36.get_checkSum() << std::endl;
+        if (t31.is_equal()) {
+            t36.error_msg = 0x0;
+            std::cout << "check out is ok!" << std::endl;
+        }else{
+            t36.error_msg = 0x1;
+            std::cout << "check out fails!" << std::endl;
+        }
+        t36.checkSum = t36.get_checkSum();
+        std::cout <<"pushing t36 msg..." << std::endl;
 
-        // t36 = t31;
-        // if (t31.is_equal()) {
-        //     t36.error_msg = 0x0;
-        //     std::cout << "check out is ok!" << std::endl;
-        // }else{
-        //     t36.error_msg = 0x1;
-        //     std::cout << "check out fails!" << std::endl;
-        // }
-        
-        // t36.checkSum = t36.get_checkSum();
-        // std::cout <<"pushing t36 msg..." << std::endl;
-        
-        // ps.push_msg<table_36>(t36);
-        // ps.push_msg(t36, buf_len);
+        ps.push_msg<table_36>(t36);
     }
     else if(test_config=="t32")
     {
@@ -324,8 +355,12 @@ int main(int argc, const char *argv[])
         table_32 t32;
         table_37 t37;
         std::cout <<"waiting for t32 msg..." << std::endl;
-        gt.pull_msg<table_32>(t32);
+//        gt.pull_msg<table_32>(t32);
+        gt.pull_msg_t32(t32.raw_data, t32.buffer_len);
+        t32.set_value();
+        
         t37 = t32;
+        
         if (t32.is_equal()) {
             t37.error_msg = 0x0;
             std::cout << "check out is ok!" << std::endl;
@@ -346,26 +381,36 @@ int main(int argc, const char *argv[])
         table_38 t38;
         table_39 t39;
         table_40 t40;
+        
         std::cout <<"waiting for t38 msg..." << std::endl;
-        gt.pull_msg<table_38>(t38);
+//        gt.pull_msg<table_38>(t38);
+        t38.query_type = 0x01;
 
         if (t38.is_equal()) {
-//            t37.error_msg = 0x0;
+            t39.error_msg = 0x0;
+            t40.error_msg = 0x0;
             std::cout << "check out is ok!" << std::endl;
         }else{
-//            t37.error_msg = 0x1;
+            t39.error_msg = 0x1;
+            t40.error_msg = 0x1;
             std::cout << "check out fails!" << std::endl;
         }
         
-//        t37.checkSum = t37.get_checkSum();
-        
         if(t38.query_type== 0x01)
         {
+            t39 = t38;
+            t39.checkSum = t39.get_checkSum();
+            
+            t39.set_buffer();
             std::cout <<"pushing t39 msg..." << std::endl;
-            ps.push_msg<table_39>(t39);
+//            ps.push_msg<table_39>(t39);
+            ps.push_msg_39(t39.raw_data, t39.buffer_len);
+            
+            
         }
         else if(t38.query_type == 0x02)
         {
+            t40 = t38;
             std::cout <<"pushing t40 msg..." << std::endl;
             ps.push_msg<table_40>(t40);
         }else
@@ -379,13 +424,15 @@ int main(int argc, const char *argv[])
         std::cout <<"upload image testing..." << std::endl;
         cv::Mat im = cv::imread("/Users/feifeiwei/dog.jpg"); // need change
         std::cout <<"image info: " << im.cols <<" " << im.rows << std::endl;
+        
         table_44 t44;
+        
         int w = 1920;
         int h = 1080;
         unsigned char *data = new unsigned char[w*h*3];//im.data;
         memcpy(data, im.data, h*w*3);
         
-        t44.header = 0x1234;
+        t44.header = 0xeb90;
         t44.img_data.reset(data);
         
         ps.push_msg_t44(t44, 1024);
