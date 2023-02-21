@@ -85,8 +85,8 @@ public:
         assert(buffer_len==idx); //ensure not  missing data.
 
 
-        ssize_t ret = sendto(sock, data, buffer_len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
-        assert(ret>0);
+//        ssize_t ret = sendto(sock, data, buffer_len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
+//        assert(ret>0);
 
         delete []data;
         data = 0;
@@ -182,8 +182,8 @@ public:
             
             auto *p = raw_data.get();
             ssize_t ret = sendto(sock, p, buff_len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
-            assert(ret>0);
-            std::cout << ret << std::endl;
+            assert(ret>0); //>>??? why.
+            std::cout <<"ret: " <<  ret <<  ".  buf_len : " << buff_len <<  std::endl;
         }
     }
     

@@ -433,11 +433,13 @@ struct table_44    // object detection device‘s ability query.  return msg.
     table_44(const table_44& t44);
 
     ~table_44();
-    const static int width   =1920;
+    const static int width   =1920; //image info
     const static int height  =1080;
     const static int channel = 3;
-
-    const static int img_buff_len = 41472;
+    const static int img_buff_len = 31104;  // image len in each pack。
+    static void  init_info(table_44&);
+    
+    friend std::ostream& operator << (std::ostream &os, const table_44 &t44);
     
     uint16_t header; //帧头
     uint16_t data_len; //数据长度
@@ -445,17 +447,21 @@ struct table_44    // object detection device‘s ability query.  return msg.
     uint8_t msg_class; //03H 图像信息
     
     uint32_t image_id;
-    uint16_t pkg_order; //包序号
+    uint16_t pkg_order; //包序号                 // diff
     uint8_t pkg_type;   // 00H
     uint8_t pkg_total_num; //
     
-    std::unique_ptr<unsigned char[]> img_data;
+    std::unique_ptr<unsigned char[]> img_data;  // diff
+    
+    int buffer_len; // output len.
+    std::unique_ptr<unsigned char[]> push_buffer;
 //      unsigned char* img_data;  //数据，太大爆了size + 8
     
     unsigned char keep[6]; // 预留
     uint16_t checkSum; //#校验和
     uint8_t tail=0xAA;  //#帧尾
 
+    void set_buffer();
     uint16_t get_checkSum();
     
 };

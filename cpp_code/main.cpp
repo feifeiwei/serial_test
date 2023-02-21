@@ -162,15 +162,22 @@ void t38_39_40_test_init(table_38& t1, table_39& t39, table_40& t40)
 }
 
 
-void t44_init(table_44& t44)
-{
-    t44.header = 0xeb90;
-    t44.data_len = 0x0705;
-    t44.msg_code = 0x8a;
-    
-    
-    strcpy((char*)t44.keep, "66keep");
-}
+//void t44_init(table_44& t44)
+//{
+//    t44.header = 0xeb90;
+//    t44.data_len = 25 + table_44::img_buff_len - 7;
+//    t44.msg_code = 0x0707;
+//    t44.msg_class = 0x03;
+//
+//    t44.pkg_type = 0x00;
+//
+//    t44.image_id = 0x0;
+//    t44.pkg_order = 0x00;
+//
+//
+//    memcpy(t44.keep, "00keep",6);
+//    t44.tail = 0xaa;
+//}
 
 
 
@@ -461,76 +468,73 @@ int main(int argc, const char *argv[])
 
     else if(test_config=="t44")// upload image
     {
-        
+        // ------ get image data --------
         std::cout <<"\nupload image testing..." << std::endl;
-        cv::Mat im = cv::imread("/userdata/00003.jpg"); // need change
+        cv::Mat im = cv::imread("/Users/feifeiwei/Downloads/serial_test-cpp_code_updateV3-3.2/cpp_code/dog.jpg"); // need change
         std::cout <<"image info: " << im.cols <<" " << im.rows << std::endl;
-        
-        table_44 t441;
 
         int w = im.cols;
         int h = im.rows;
-        unsigned char *data = new unsigned char[w*h*3];//im.data;
-        memcpy(data, im.data, h*w*3);
-
-        int img_buff_len = table_44::img_buff_len; //46080
-
-        t441.pkg_total_num = table_44::width * table_44::height * table_44::channel / table_44::img_buff_len;
-
-        std::cout <<"pkg_total_num info: " <<  + t441.pkg_total_num <<" " << std::endl;
-
-        std::vector<unsigned char *> img_buffs; 
-
-        t441.header = 0xeb90;
-        t441.data_len = 25 + table_44::img_buff_len - 7;
-        t441.msg_code = 0x0707;
-        t441.msg_class = 0x03;
-
-        t441.pkg_type = 0x00;
-
-        t441.image_id = 0x0;
-        t441.pkg_order = 0x00;
+        unsigned char *raw_img_data = new unsigned char[w*h*3];//im.data;
+        memcpy(raw_img_data, im.data, h*w*3);
         
+        
+//        for (int i=1000; i < 10000; i++) {
+//            std::cout <<"d: " << +data[i] <<" "  << std::endl;
+//        }
+        // ------ split pkg --------
+        table_44 t44;
+        table_44::init_info(t44);
+        
+        std::cout <<"pkg_total_num: " <<  + t44.pkg_total_num <<" " << std::endl;
 
-        memcpy(t441.keep, "00keep",6);
-        t441.tail = 0xaa;
-        //分四包发送 1920*1080*3 = 6220800，  没包/4 = 1,555,200
-        std::vector<table_44> t44s;
-
-
-        // unsigned char *data1 = new unsigned char[img_buff_len];  //图像分四个包发送
-        // unsigned char *data2 = new unsigned char[img_buff_len];
-        // unsigned char *data3 = new unsigned char[img_buff_len];
-        // unsigned char *data4 = new unsigned char[img_buff_len];
-
-        // memcpy(data1, data,           img_buff_len);
-        // memcpy(data2, data+img_buff_len,   img_buff_len);
-        // memcpy(data3, data+2*img_buff_len, img_buff_len);
-        // memcpy(data4, data+3*img_buff_len, img_buff_len);
-        // t44s.push_back(t441);
-
-        ps.push_msg_44_split(t441);
-        sleep(1);  //延迟1秒
-
-        for (int i = 1; i < t441.pkg_total_num; ++i) // from 1 to end.
+//        std::cout << t44 << std::endl;
+        
+        for (int i = 0; i < t44.pkg_total_num; ++i) // from 1 to end.
         {
-            unsigned char *data_tmp = new unsigned char[img_buff_len];
-            /* code */
-            table_44 t44(t441);
 
-            t44.pkg_order = t441.pkg_order + i;
-            memcpy(data_tmp, data+i*img_buff_len,  img_buff_len);
+            unsigned char *data_tmp = new unsigned char[table_44::img_buff_len]{0}; //default value is 0;
+            memcpy(data_tmp, raw_img_data+i*table_44::img_buff_len,  table_44::img_buff_len);
 
-            
-            t44.img_data.reset(data_tmp);
-            t44.checkSum = t44.get_checkSum();
+            t44.img_data.reset(data_tmp); //获取每包图像数据
+            t44.pkg_order = i;            // 包id
+            t44.checkSum = t44.get_checkSum(); //
 
-            // t44s.push_back(t44);
-            ps.push_msg_44_split(t44);
-            // sleep(1);  //延迟1秒
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            t44.set_buffer();
 
+            std::cout << +i << ":\n " << t44 << std::endl;
+            ps.push_msg_39(t44.push_buffer, t44.buffer_len);
+
+//            break;
         }
+        
+        
+        
+        
+//        std::vector<table_44> t44s;
+//
+//        ps.push_msg_44_split(t441);
+//        sleep(1);  //延迟1秒
+
+//        for (int i = 1; i < t441.pkg_total_num; ++i) // from 1 to end.
+//        {
+//            unsigned char *data_tmp = new unsigned char[img_buff_len];
+//            /* code */
+//            table_44 t44(t441);
+//
+//            t44.pkg_order = t441.pkg_order + i;
+//            memcpy(data_tmp, data+i*img_buff_len,  img_buff_len);
+//
+//
+//            t44.img_data.reset(data_tmp);
+//            t44.checkSum = t44.get_checkSum();
+//
+//            // t44s.push_back(t44);
+//            ps.push_msg_44_split(t44);
+//            // sleep(1);  //延迟1秒
+//            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+//
+//        }
 
         // std::cout <<"pkg_total_num : " << +t441.pkg_total_num << std::endl;
         // std::cout <<"total num: " << t44s.size() << std::endl;
