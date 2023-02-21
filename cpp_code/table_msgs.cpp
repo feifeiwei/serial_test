@@ -43,6 +43,21 @@ static unsigned short ccitt_tables[256] =
 };
 
 
+// void reverse(unsigned char  * a,int n)
+// {
+
+//     unsigned char b[n];
+//     for(int i=0;i<n;i++)
+//     {
+//         b[n-i-1]=a[i];
+//     }
+//     for(int i=0;i<n;i++)
+//     {
+//         a[i]=b[i];
+//     }
+// }
+
+
 template<typename T>
 int split_int(T num)
 {
@@ -65,7 +80,7 @@ uint16_t do_crc_checkSum(uint8_t* buff, uint16_t len)
     uint16_t crc = 0xFFFF;
     
     while (len-->0) {
-        crc = ccitt_tables[(crc>>8 ^ *buff++) & 0xff]^ (crc>>8);
+        crc = ccitt_tables[(crc>>8 ^ *buff++) & 0xff] ^ (crc<<8);
     }
     return crc;
 }
@@ -82,47 +97,53 @@ uint16_t table_28::get_checkSum()
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
+    buff[idx++] = data_len >> 8;
     
-    buff[idx++] = msg_code >> 8;
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
     
     buff[idx++] = control_type;
     buff[idx++] = device_ssr;
     buff[idx++] = device_running_mode;
-    
+    // std::cout <<"----------------------------" << std::endl;
+
+    // std::cout <<"1: "<<  std::hex<<  (data_len >> 8) << std::endl;
+    // std::cout <<"1: "<<  std::hex<<  (data_len & 0xff) << std::endl;
+    // std::cout <<"2: "<<  std::hex<<  (msg_code >> 8) << std::endl;
+    // std::cout <<"2: "<<  std::hex<<  (msg_code & 0xff) << std::endl;
+    // std::cout <<"3: "<<  std::hex<<  (control_type) << std::endl;
+    // std::cout <<"4: "<<  std::hex<<  (device_ssr) << std::endl;
+    // std::cout <<"5: "<<  std::hex<<  (device_running_mode) << std::endl;
+
+
+    // std::cout << "\ndata_len: " <<std::hex<< (data_len >> 8)  << ",  " << (data_len & 0xff) << std::endl;
+    // std::cout << "msg_code: " << std::hex<<(msg_code >> 8)  << ",  " << (msg_code & 0xff) << std::endl;
+    // std::cout << "control_type: "<< std::hex<< +control_type  << ",  " << +device_ssr << ", " << device_running_mode <<std::endl;
+    // std::cout << "addr_rgb: " << addr_rgb << std::endl;
+    // std::cout << "addr_ir: " << addr_rgb << std::endl;
+    // std::cout << "addr_lidar: " << addr_lidar << std::endl;
     for(const auto &c: addr_rgb) buff[idx++] = c;
     for(const auto &c: addr_ir) buff[idx++] = c;
     for(const auto &c: addr_lidar) buff[idx++] = c;
+
     for(const auto &c: keep) buff[idx++] = c;
     
     assert(idx==len); //check!
     
     uint16_t crc = do_crc_checkSum(buff, len);
-    
-//    int s2 = split_int<uint16_t>(num2);
-//    int s3 = split_int<uint8_t>(num3);
-//    int s4 = split_int<uint8_t>(num4);
-//    int s5 = split_int<uint8_t>(num5);
-//    int s6 = split_int<uint8_t>(num6);
-//
-//    int s7 = split_char(num7, 24);
-//    int s8 = split_char(num8, 24);
-//    int s9 = split_char(num9, 24);
-//    int s10 = split_char(num10, 63);
-//
-//    int all = s2+s3+s4+s5+s6 + s7+s8+s9+s10;
-//
+
     return crc;
 }
 
 
 table_33& table_33::operator=(const table_28& t28)
 {
-    header = t28.header;
-    data_len = t28.data_len;
-    msg_code = t28.msg_code;
+
+
+    header = t28.header;//t28.header;
+    data_len = t28.data_len+1;
+    msg_code = 0x0803;//t28.msg_code;
     control_type = t28.control_type;
     
     device_ssr = t28.device_ssr;
@@ -145,11 +166,11 @@ uint16_t table_33::get_checkSum()
     uint8_t  buff[len];
     int idx=0;
     
-    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
+    buff[idx++] = data_len >> 8;
     
-    buff[idx++] = msg_code >> 8;
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
     
     buff[idx++] = control_type;
     buff[idx++] = device_ssr;
@@ -188,11 +209,11 @@ uint16_t table_29::get_checkSum()
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
+    buff[idx++] = data_len >> 8;
     
-    buff[idx++] = msg_code >> 8;
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
     
     buff[idx++] = control_type;
     buff[idx++] = det_isBegin;
@@ -218,8 +239,8 @@ uint16_t table_29::get_checkSum()
 table_34& table_34::operator=(const table_29& t29)
 {
     header = t29.header;
-    data_len = t29.data_len;
-    msg_code = t29.msg_code;
+    data_len = t29.data_len + 1;
+    msg_code = 0x0803;//t29.msg_code;
     control_type = t29.control_type;
     
     det_isBegin = t29.det_isBegin;     // object detector start or stop. 00=stop 01=strat
@@ -247,10 +268,10 @@ uint16_t table_34::get_checkSum()
     uint8_t  buff[len];
     int idx=0;
     
-    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
-    buff[idx++] = msg_code >> 8;
+    buff[idx++] = data_len >> 8;
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
     buff[idx++] = control_type;
     
     
@@ -287,26 +308,29 @@ uint16_t table_30::get_checkSum()
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
+    buff[idx++] = data_len >> 8;
     
-    buff[idx++] = msg_code >> 8;
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
     
     buff[idx++] = control_type;
     
     buff[idx++] = track_isBegin;
     buff[idx++] = track_pattern;
     buff[idx++] = track_principle;
-    
-    buff[idx++] = track_id_manual >> 8;
+
     buff[idx++] = track_id_manual & 0xff;
+    buff[idx++] = track_id_manual >> 8;
+    
     
     buff[idx++] = track_conf;
-    buff[idx++] = track_maximum >> 8;
     buff[idx++] = track_maximum & 0xff;
-    buff[idx++] = track_free >> 8;
+    buff[idx++] = track_maximum >> 8;
+
     buff[idx++] = track_free & 0xff;
+    buff[idx++] = track_free >> 8;
+    
     
     for(const auto &c: keep) buff[idx++] = c;
     
@@ -322,8 +346,8 @@ uint16_t table_30::get_checkSum()
 table_35& table_35::operator=(const table_30& t30)
 {
     header = t30.header;
-    data_len = t30.data_len;
-    msg_code = t30.msg_code;
+    data_len = t30.data_len+1;
+    msg_code = 0x0803;//t30.msg_code;
     control_type = t30.control_type;
     
     track_isBegin  =  t30.track_isBegin;     // object detector start or stop. 00=stop 01=strat
@@ -350,24 +374,27 @@ uint16_t table_35::get_checkSum()
     uint8_t  buff[len];
     int idx=0;
     
-    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
-    buff[idx++] = msg_code >> 8;
+    buff[idx++] = data_len >> 8;
+    
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
     buff[idx++] = control_type;
     
     buff[idx++] = track_isBegin;
     buff[idx++] = track_pattern;
     buff[idx++] = track_principle;
     
-    buff[idx++] = track_id_manual >> 8;
     buff[idx++] = track_id_manual & 0xff;
+    buff[idx++] = track_id_manual >> 8;
+    
     
     buff[idx++] = track_conf;
-    buff[idx++] = track_maximum >> 8;
     buff[idx++] = track_maximum & 0xff;
-    buff[idx++] = track_free >> 8;
+    buff[idx++] = track_maximum >> 8;
+    
     buff[idx++] = track_free & 0xff;
+    buff[idx++] = track_free >> 8;
     
     for(const auto &c: keep) buff[idx++] = c;
     buff[idx++] = error_msg;
@@ -381,41 +408,93 @@ uint16_t table_35::get_checkSum()
 
 // ------------------------ table 30 35 ------------------------------------------
 // ------------------------ table 31 36 ------------------------------------------
-
 bool table_31::is_equal()
 {
     return checkSum==get_checkSum();
 }
 
+void table_31::set_value()
+{
+    
+    int idx = 0;
+//    header =  raw_data[1] + (raw_data[0]<<8); // same as table receive order.
+    header = raw_data[idx++];
+    header += (raw_data[idx++]<<8);
+    data_len = raw_data[idx++];
+    data_len += (raw_data[idx++]<<8);
+    msg_code = raw_data[idx++];
+    msg_code += (raw_data[idx++]<<8);
+    
+    control_type = raw_data[idx++];
+    alart_isBegin = raw_data[idx++];
+
+    for(auto& c: alart_port) c = raw_data[idx++];
+    
+    
+    alart_trigger_mode = raw_data[idx++];
+    
+    while (raw_data[idx]!=0x00) {
+        alart_classes.push_back(raw_data[idx]);
+        idx++;
+    }
+    alart_classes.push_back(0x00);
+    idx++;
+    
+    alart_threat_level = raw_data[idx++];
+    unknownObj_alart_conf = raw_data[idx++];
+    
+    alart_free = raw_data[idx++];
+    alart_free += (raw_data[idx++]<<8);
+    
+    for(auto& c: keep) c = raw_data[idx++]; // reverse?
+        
+    checkSum = raw_data[idx++];
+    checkSum += (raw_data[idx++]<<8);
+    
+    tail = raw_data[idx++];
+    
+    std::cout <<"idx==buff_len" << idx<< ", " << buffer_len << std::endl;
+
+    assert(idx==buffer_len);
+}
+
 uint16_t table_31::get_checkSum()
 {
-    uint16_t len = sizeof(table_31)-5; //
+    uint16_t len = buffer_len-5;//sizeof(table_31)-5; //
     uint8_t buff[len];
-    
+//
     int idx=0;
-    buff[idx++] = data_len >> 8;
+
     buff[idx++] = data_len & 0xff;
-    
-    buff[idx++] = msg_code >> 8;
+    buff[idx++] = data_len >> 8;
+
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
     
     buff[idx++] = control_type;
-    
     buff[idx++] = alart_isBegin;
+    
+//    reverse(alart_port, 24); //逆序？
     for(const auto &c: alart_port) buff[idx++] = c;
-    buff[idx++] = alart_trigger_mode; //
-    buff[idx++] = alart_classes;
+    
+    buff[idx++] = alart_trigger_mode;
+    
+    for (auto it = alart_classes.begin(); it != alart_classes.end(); it++)
+//    for (auto it = alart_classes.rbegin(); it != alart_classes.rend(); it++)
+        buff[idx++] = *it;
+    
     buff[idx++] = alart_threat_level;   //
     buff[idx++] = unknownObj_alart_conf; //
-    buff[idx++] = alart_free >> 8;
     buff[idx++] = alart_free & 0xff;
+    buff[idx++] = alart_free >> 8;
     
+//    reverse(keep, 4); //逆序
     for(const auto &c: keep) buff[idx++] = c;; // 预留
-    
+//
     assert(idx==len); //check!
-    
+//
     uint16_t crc = do_crc_checkSum(buff, len);
-
+//
     return crc;
 
 }
@@ -423,21 +502,23 @@ uint16_t table_31::get_checkSum()
 table_36& table_36::operator=(const table_31& t31)
 {
     header = t31.header;
-    data_len = t31.data_len;
-    msg_code = t31.msg_code;
+    data_len = t31.data_len+1;
+    msg_code = 0x0803;//t31.msg_code;
     control_type = t31.control_type;
     
     
     alart_isBegin = t31.alart_isBegin;
     memcpy(alart_port, t31.alart_port, 24);; // 预留
     alart_trigger_mode = t31.alart_trigger_mode; //
-    alart_classes = t31.alart_classes;
+//    alart_classes = t31.alart_classes;
+    alart_classes.assign(t31.alart_classes.begin(), t31.alart_classes.end());
+
     alart_threat_level = t31.alart_threat_level;   //
     unknownObj_alart_conf = t31.unknownObj_alart_conf; //
     alart_free = t31.alart_free; //
-    
     memcpy(keep, t31.keep, 4);; // 预留
 
+    buffer_len = t31.buffer_len + 1; // error_code.
     
     tail = 0xAA; // same
     
@@ -445,37 +526,95 @@ table_36& table_36::operator=(const table_31& t31)
     
 }
 
+
+
+
+
+
 uint16_t table_36::get_checkSum()
 {
-    uint16_t len = sizeof(table_36)-5; //
+    uint16_t len = buffer_len-5; //sizeof(table_36)-5; //
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len >> 8;
-    buff[idx++] = data_len & 0xff;
     
-    buff[idx++] = msg_code >> 8;
+    buff[idx++] = data_len & 0xff;
+    buff[idx++] = data_len >> 8;
+
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
     
     buff[idx++] = control_type;
-    
     buff[idx++] = alart_isBegin;
+    
     for(const auto &c: alart_port) buff[idx++] = c;
     buff[idx++] = alart_trigger_mode; //
-    buff[idx++] = alart_classes;
+
+//    buff[idx++] = alart_classes;
+    for (auto it = alart_classes.begin(); it != alart_classes.end(); it++)
+//    for (auto it = alart_classes.rbegin(); it != alart_classes.rend(); it++)
+        buff[idx++] = *it;
+    
+    
     buff[idx++] = alart_threat_level;   //
     buff[idx++] = unknownObj_alart_conf; //
-    buff[idx++] = alart_free >> 8;
+    
     buff[idx++] = alart_free & 0xff;
+    buff[idx++] = alart_free >> 8;
+    
     
     for(const auto &c: keep) buff[idx++] = c;; // 预留
     buff[idx++] = error_msg;
-    
+
     assert(idx==len); //check!
     
     uint16_t crc = do_crc_checkSum(buff, len);
     return crc;
 
+}
+
+void table_36::set_buffer()
+{
+    uint16_t len = data_len + 7; //
+//    uint8_t buff[len];
+    raw_data = std::make_unique<unsigned char[]>(len);
+    
+    int idx=0;
+    raw_data[idx++] = header & 0xff;
+    raw_data[idx++] = header >> 8;
+
+    raw_data[idx++] = data_len & 0xff;
+    raw_data[idx++] = data_len >> 8;
+    
+    raw_data[idx++] = msg_code & 0xff;
+    raw_data[idx++] = msg_code >> 8;
+
+    raw_data[idx++] = control_type;
+    raw_data[idx++] = alart_isBegin;
+
+    for(const auto &c: alart_port) raw_data[idx++] = c;; // 预留
+    raw_data[idx++] = alart_trigger_mode;    
+    
+    for (auto it = alart_classes.begin(); it != alart_classes.end(); it++)
+        raw_data[idx++] = *it;
+
+    raw_data[idx++] = alart_threat_level;
+    raw_data[idx++] = unknownObj_alart_conf;
+
+    raw_data[idx++] = alart_free & 0xff;
+    raw_data[idx++] = alart_free >> 8;
+
+    for(const auto &c: keep) raw_data[idx++] = c;; // 预留
+
+    raw_data[idx++] = error_msg;    
+
+    raw_data[idx++] = checkSum & 0xff;
+    raw_data[idx++] = checkSum >> 8;
+
+    raw_data[idx++] = tail;
+
+    assert(idx==len);
+    buffer_len = len;
 }
 
 
@@ -486,21 +625,56 @@ bool table_32::is_equal()
     return checkSum==get_checkSum();
 }
 
+void table_32::set_value()
+{
+    int idx = 0;
+    //    header =  raw_data[1] + (raw_data[0]<<8); // same as table receive order.
+    header = raw_data[idx++];
+    header += (raw_data[idx++]<<8);
+    data_len = raw_data[idx++];
+    data_len += (raw_data[idx++]<<8);
+    msg_code = raw_data[idx++];
+    msg_code += (raw_data[idx++]<<8);
+    control_type = raw_data[idx++];
+    
+    while (raw_data[idx]!=0x00) {
+        obj_classes.push_back(raw_data[idx]);
+        idx++;
+    }
+    obj_classes.push_back(0x00);
+    idx++;
+    
+    for(auto& c: keep) c = raw_data[idx++]; // reverse?
+    
+    checkSum = raw_data[idx++];
+    checkSum += (raw_data[idx++]<<8);
+    
+    tail = raw_data[idx++];
+    
+    std::cout <<"idx==buff_len" << idx<< ", " << buffer_len << std::endl;
+
+    assert(idx==buffer_len);
+    
+}
+                        
+
 uint16_t table_32::get_checkSum()
 {
-    uint16_t len = sizeof(table_32)-5; //
+    uint16_t len = buffer_len-5; //
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
-    
-    buff[idx++] = msg_code >> 8;
+    buff[idx++] = data_len >> 8;
+
     buff[idx++] = msg_code & 0xff;
-    
+    buff[idx++] = msg_code >> 8;
+        
     buff[idx++] = control_type;
     
-    buff[idx++] = obj_classes;     // see appendix 2
+//    buff[idx++] = obj_classes;     // see appendix 2
+    for (auto it = obj_classes.begin(); it != obj_classes.end(); it++)
+        buff[idx++] = *it;
     
     for(const auto &c: keep) buff[idx++] = c;; // 预留
     
@@ -515,34 +689,37 @@ uint16_t table_32::get_checkSum()
 table_37& table_37::operator=(const table_32& t32)
 {
     header = t32.header;
-    data_len = t32.data_len;
-    msg_code = t32.msg_code;
+    data_len = t32.data_len+1;
+    msg_code = 0x0803;// t32.msg_code;
     control_type = t32.control_type;
     
-    obj_classes = t32.obj_classes;
-    
+//    obj_classes = t32.obj_classes;
+    obj_classes.assign(t32.obj_classes.begin(), t32.obj_classes.end());
     memcpy(keep, t32.keep, 2);; // 预留
-
     tail = 0xAA; // same
+
+    buffer_len = t32.buffer_len + 1;
+
     return *this;
-    
 }
 
 uint16_t table_37::get_checkSum()
 {
-    uint16_t len = sizeof(table_37)-5; //
+    uint16_t len = buffer_len - 5; //
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
-    
-    buff[idx++] = msg_code >> 8;
+    buff[idx++] = data_len >> 8;
+
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
     
     buff[idx++] = control_type;
     
-    buff[idx++] = obj_classes;     // see appendix 2
+//    buff[idx++] = obj_classes;     // see appendix 2
+    for (auto it = obj_classes.begin(); it != obj_classes.end(); it++)
+        buff[idx++] = *it;
     
     for(const auto &c: keep) buff[idx++] = c;; // 预留
     buff[idx++] = error_msg;
@@ -555,9 +732,45 @@ uint16_t table_37::get_checkSum()
 }
 
 
+
+void table_37::set_buffer()
+{
+    uint16_t len = data_len + 7; //
+//    uint8_t buff[len];
+    raw_data = std::make_unique<unsigned char[]>(len);
+    
+    int idx=0;
+    raw_data[idx++] = header & 0xff;
+    raw_data[idx++] = header >> 8;
+
+    raw_data[idx++] = data_len & 0xff;
+    raw_data[idx++] = data_len >> 8;
+    
+    raw_data[idx++] = msg_code & 0xff;
+    raw_data[idx++] = msg_code >> 8;
+
+    raw_data[idx++] = control_type;
+
+    for (auto it = obj_classes.begin(); it != obj_classes.end(); it++)
+        raw_data[idx++] = *it;
+
+    for(const auto &c: keep) raw_data[idx++] = c;; // 预留
+
+    raw_data[idx++] = error_msg;    
+
+    raw_data[idx++] = checkSum & 0xff;
+    raw_data[idx++] = checkSum >> 8;
+
+    raw_data[idx++] = tail;
+
+    assert(idx==len);
+    buffer_len = len;
+
+}
+
 // ------------------------ table 32 37 ------------------------------------------
 // ------------------------condition query------------------------------------------
-// ------------------------ table 38 39 ------------------------------------------
+// ------------------------ table 38 39 40------------------------------------------
 bool table_38::is_equal()
 {
     return checkSum==get_checkSum();
@@ -569,11 +782,12 @@ uint16_t table_38::get_checkSum()
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
+    buff[idx++] = data_len >> 8;
     
-    buff[idx++] = msg_code >> 8;
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
+   
     
     buff[idx++] = query_type;
 
@@ -585,21 +799,107 @@ uint16_t table_38::get_checkSum()
     return crc;
 }
 
+table_39& table_39::operator=(const table_38& t38)
+{
+    alart_classes.push_back(0x01);
+    alart_classes.push_back(0x02);
+    alart_classes.push_back(0x03);
+    alart_classes.push_back(0x00);//fake value
+    
+    header = t38.header;
+    data_len = 155 + alart_classes.size() - 7;
+    msg_code = 0x0804;// t32.msg_code;
+    feedback_type = 0x01;
 
+
+    obj_conf = 50;
+
+    memcpy(data_source, "192.18e729472947294727373333330000000.222192.18e729472947294727373333330000000.2221234567891127", 96);
+    memcpy(alart_port, "111111111111111111111234",24);
+
+    // data_source = d_s;
+    
+    error_msg = 0x0;
+    tail = 0xaa;
+    return *this;
+}
+
+void table_39::set_buffer()
+{
+    uint16_t len = data_len + 7; //
+//    uint8_t buff[len];
+    raw_data = std::make_unique<unsigned char[]>(len);
+    
+    int idx=0;
+    raw_data[idx++] = header & 0xff;
+    raw_data[idx++] = header >> 8;
+
+    raw_data[idx++] = data_len & 0xff;
+    raw_data[idx++] = data_len >> 8;
+    
+    raw_data[idx++] = msg_code & 0xff;
+    raw_data[idx++] = msg_code >> 8;
+    
+    
+    raw_data[idx++] = feedback_type;
+    raw_data[idx++] = device_condition;  // device condition feedback.// device condition feedback.
+    for(const auto &c: data_source) raw_data[idx++] = c;; // 预留
+    raw_data[idx++] = device_stop_status;
+    
+    raw_data[idx++] = det_pattern;
+    raw_data[idx++] =  det_dataSource_status;
+    raw_data[idx++] =  preprocess_method;
+    raw_data[idx++] =  obj_conf;   //detect confidence
+    raw_data[idx++] =  obj_rec_conf; // recognition confidence
+    raw_data[idx++] =  minimum_len; // for obj detect minimum bbox len.
+    raw_data[idx++] =  minimum_width; // for obj detect minimum bbox w.
+    raw_data[idx++] =  unknown_det_status;
+    
+    raw_data[idx++] =  track_func_status;
+    raw_data[idx++] =  track_pattern;    // object pattern
+    raw_data[idx++] =  track_principle; //
+    
+    raw_data[idx++] = track_maximum & 0xff;
+    raw_data[idx++] = track_maximum >> 8;
+    raw_data[idx++] =  track_conf;   //
+    
+    raw_data[idx++] =  alart_func_status;
+    for(const auto &c: alart_port) raw_data[idx++] = c;; // 预留
+    raw_data[idx++] =  alart_trigger_mode; //
+    
+    for (auto it = alart_classes.begin(); it != alart_classes.end(); it++)
+        raw_data[idx++] = *it;
+    
+    raw_data[idx++] =  alart_threat_level;   //
+    raw_data[idx++] =  unknownObj_alart_conf; //
+    
+    
+    for(const auto &c: keep) raw_data[idx++] = c;; // 预留
+    raw_data[idx++] = error_msg;
+    raw_data[idx++] = checkSum & 0xff;
+    raw_data[idx++] = checkSum >> 8;
+    raw_data[idx++] = tail;
+    
+    
+    assert(idx==len);
+    buffer_len = len;
+}
 
 uint16_t table_39::get_checkSum()
 {
-    uint16_t len = sizeof(table_39)-5; //
+    uint16_t len = data_len + 7 - 5; //
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
+    buff[idx++] = data_len >> 8;
     
-    buff[idx++] = msg_code >> 8;
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
     
-    buff[idx++] = feedback_type;  // device condition feedback.
+    
+    buff[idx++] = feedback_type;
+    buff[idx++] = device_condition;  // device condition feedback.// device condition feedback.
     for(const auto &c: data_source) buff[idx++] = c;; // 预留
     buff[idx++] = device_stop_status;
     
@@ -615,25 +915,49 @@ uint16_t table_39::get_checkSum()
     buff[idx++] =  track_func_status;
     buff[idx++] =  track_pattern;    // object pattern
     buff[idx++] =  track_principle; //
-    buff[idx++] = track_maximum >> 8;
+    
     buff[idx++] = track_maximum & 0xff;
+    buff[idx++] = track_maximum >> 8;
     buff[idx++] =  track_conf;   //
     
     buff[idx++] =  alart_func_status;
     for(const auto &c: alart_port) buff[idx++] = c;; // 预留
     buff[idx++] =  alart_trigger_mode; //
-    buff[idx++] =  alart_classes;
+    
+    for (auto it = alart_classes.begin(); it != alart_classes.end(); it++)
+        buff[idx++] = *it;
+    
     buff[idx++] =  alart_threat_level;   //
     buff[idx++] =  unknownObj_alart_conf; //
     
     
     for(const auto &c: keep) buff[idx++] = c;; // 预留
     buff[idx++] = error_msg;
+    
+//    std::cout << idx << " " << len << std::endl;
     assert(idx==len); //check!
     
     uint16_t crc = do_crc_checkSum(buff, len);
     
     return crc;
+    
+}
+
+table_40& table_40::operator=(const table_38& t38)
+{
+    
+    header = t38.header;
+    data_len = 24-7;
+    msg_code = 0x0804;// t32.msg_code;
+    feedback_type = 0x02;
+    
+
+
+    
+    error_msg = 0x00;
+    tail = 0xaa;
+    
+    return *this;
     
 }
 
@@ -643,11 +967,11 @@ uint16_t table_40::get_checkSum()
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
+    buff[idx++] = data_len >> 8;
     
-    buff[idx++] = msg_code >> 8;
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
     
     buff[idx++] = feedback_type;  // device condition feedback.
 
@@ -677,33 +1001,59 @@ uint16_t table_40::get_checkSum()
 // ------------------------ table 38 39 40 ------------------------------------------
 // ------------------------ table 44  image upload msg ------------------------------------------
 
+table_44::table_44(const table_44& t44)
+{
+    header = t44.header;
+    data_len = t44.data_len;
+    msg_code = t44.msg_code;
+    msg_class = t44.msg_class;
+    image_id = t44.image_id;
+    pkg_order = t44.pkg_order;
+    pkg_type = t44.pkg_type;
+    pkg_total_num = t44.pkg_total_num;
+
+    //img_data
+    memcpy(keep, t44.keep,6);
+
+    // checkSum?
+    tail = t44.tail;
+
+}
+
+
+
 uint16_t table_44::get_checkSum()
 {
-    long len = sizeof(table_44)-5; //
+    long len = 20 + table_44::img_buff_len;//sizeof(table_44)-5; //
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len >> 8;
+    
     buff[idx++] = data_len & 0xff;
-
-    buff[idx++] = msg_code >> 8; //消息代码
+    buff[idx++] = data_len >> 8;
+    
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8; //消息代码
     
     buff[idx++] = msg_class; //03H 图像信息
     
-    buff[idx++] = (uint8_t)(image_id >> 24); // there is not necessary explicit cast the type cos buff is uint8.
-    buff[idx++] = (uint8_t)(image_id >> 16);
-    buff[idx++] = (uint8_t)(image_id >> 8);
     buff[idx++] = (uint8_t)(image_id & 0xff);
+    buff[idx++] = (uint8_t)(image_id >> 8);
+    buff[idx++] = (uint8_t)(image_id >> 16);
+    buff[idx++] = (uint8_t)(image_id >> 24); // there is not necessary explicit cast the type cos buff is uint8.
     
-    buff[idx++] = pkg_order >> 8;
+    
     buff[idx++] = pkg_order & 0xff;
+    buff[idx++] = pkg_order >> 8;
 
     buff[idx++] = pkg_type;
-    buff[idx++] = pkg_total_num;
+
+    buff[idx++] = pkg_total_num & 0xff;
+    buff[idx++] = pkg_total_num >> 8; //消息代码
     
 //    for(const auto &c: img_data) buff[idx++] = c; // img data
-    for(int i=0; i<this->width * this->height * this->channel; i++)
+    // for(int i=0; i<this->width * this->height * this->channel; i++)
+    for(int i=0; i<table_44::img_buff_len; i++)
         buff[idx++] = img_data[i];
     
     for(const auto &c: keep) buff[idx++] = c; // 预留
