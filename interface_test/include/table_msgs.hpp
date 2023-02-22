@@ -23,7 +23,7 @@ int split_char(unsigned char*);
 uint16_t do_crc_checkSum(uint8_t* buff, uint16_t len);
 
 //数组倒序，接收数组首元素地址，无返回值
-void reverse(unsigned char * a,int n);
+// void reverse(unsigned char * a,int n);
 
 // ------------------------ table 28 33 ------------------------------------------
 // tabel 28 basic control msg
@@ -254,8 +254,9 @@ struct table_36    // object alart msg
     uint8_t tail;  //#帧尾
     
     int buffer_len = 120; // 默认长度
-    std::unique_ptr<unsigned char[]> raw_data = std::make_unique<unsigned char[]>(buffer_len);  //处理变长数据
+    std::unique_ptr<unsigned char[]> raw_data;// = std::make_unique<unsigned char[]>(buffer_len);  //处理变长数据
     
+    void set_buffer();
     uint16_t get_checkSum(); //成员函数不占空间
     table_36& operator=(const table_31& t31);
 };
@@ -280,7 +281,7 @@ struct table_32    // object detection classes control msg
     uint8_t tail;  //#帧尾
     
     int buffer_len = 120; // 默认长度
-    std::unique_ptr<unsigned char[]> raw_data = std::make_unique<unsigned char[]>(buffer_len);
+    std::unique_ptr<unsigned char[]> raw_data{new unsigned char[buffer_len]}; //= std::make_unique<unsigned char[]>(buffer_len);
     
     uint16_t get_checkSum(); //成员函数不占空间
     void set_value(); // 将raw_data 回到 每个成员变量
@@ -307,6 +308,9 @@ struct table_37    // object detection classes control msg
     int buffer_len = 120; // 默认长度
     std::unique_ptr<unsigned char[]> raw_data = std::make_unique<unsigned char[]>(buffer_len);  //处理变长数据
     
+
+    void set_buffer();
+
     uint16_t get_checkSum(); //成员函数不占空间
     table_37& operator=(const table_32& t32);
 };
@@ -421,19 +425,21 @@ struct table_40    // object detection device‘s ability query.  return msg.
 
 
 
-
-
 // ------------------------ table 44  image upload msg ------------------------------------------
 #pragma pack(push,1)
 struct table_44    // object detection device‘s ability query.  return msg.
 {
     table_44();
+    table_44(const table_44& t44);
+
     ~table_44();
-    const static int width   =1920;
-    const static int height  =1080;
+    const static int width   =640; //image info
+    const static int height  =480;
     const static int channel = 3;
+    const static int img_buff_len = 3011;  // image len in each pack。   18066 / 6
+    static void  init_info(table_44&);
     
-    uint16_t get_checkSum(); //成员函数不占空间
+    friend std::ostream& operator << (std::ostream &os, const table_44 &t44);
     
     uint16_t header; //帧头
     uint16_t data_len; //数据长度
@@ -441,19 +447,22 @@ struct table_44    // object detection device‘s ability query.  return msg.
     uint8_t msg_class; //03H 图像信息
     
     uint32_t image_id;
-    uint16_t pkg_order; //包序号
-    uint8_t pkg_type;
+    uint16_t pkg_order; //包序号                 // diff
+    uint8_t pkg_type;   // 00H
+    uint16_t pkg_total_num; //
     
-    uint8_t pkg_total_num;
+    std::unique_ptr<unsigned char[]> img_data;  // diff
     
-    std::unique_ptr<unsigned char[]> img_data;
+    int buffer_len; // output len.
+    std::unique_ptr<unsigned char[]> push_buffer;
 //      unsigned char* img_data;  //数据，太大爆了size + 8
     
     unsigned char keep[6]; // 预留
     uint16_t checkSum; //#校验和
     uint8_t tail=0xAA;  //#帧尾
-    
-    
+
+    void set_buffer();
+    uint16_t get_checkSum();
     
 };
 #pragma pack(pop)

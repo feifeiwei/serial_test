@@ -43,19 +43,19 @@ static unsigned short ccitt_tables[256] =
 };
 
 
-void reverse(unsigned char  * a,int n)
-{
+// void reverse(unsigned char  * a,int n)
+// {
 
-    unsigned char b[n];
-    for(int i=0;i<n;i++)
-    {
-        b[n-i-1]=a[i];
-    }
-    for(int i=0;i<n;i++)
-    {
-        a[i]=b[i];
-    }
-}
+//     unsigned char b[n];
+//     for(int i=0;i<n;i++)
+//     {
+//         b[n-i-1]=a[i];
+//     }
+//     for(int i=0;i<n;i++)
+//     {
+//         a[i]=b[i];
+//     }
+// }
 
 
 template<typename T>
@@ -453,6 +453,8 @@ void table_31::set_value()
     
     tail = raw_data[idx++];
     
+    std::cout <<"idx==buff_len" << idx<< ", " << buffer_len << std::endl;
+
     assert(idx==buffer_len);
 }
 
@@ -524,6 +526,11 @@ table_36& table_36::operator=(const table_31& t31)
     
 }
 
+
+
+
+
+
 uint16_t table_36::get_checkSum()
 {
     uint16_t len = buffer_len-5; //sizeof(table_36)-5; //
@@ -566,6 +573,50 @@ uint16_t table_36::get_checkSum()
 
 }
 
+void table_36::set_buffer()
+{
+    uint16_t len = data_len + 7; //
+//    uint8_t buff[len];
+    raw_data = std::make_unique<unsigned char[]>(len);
+    
+    int idx=0;
+    raw_data[idx++] = header & 0xff;
+    raw_data[idx++] = header >> 8;
+
+    raw_data[idx++] = data_len & 0xff;
+    raw_data[idx++] = data_len >> 8;
+    
+    raw_data[idx++] = msg_code & 0xff;
+    raw_data[idx++] = msg_code >> 8;
+
+    raw_data[idx++] = control_type;
+    raw_data[idx++] = alart_isBegin;
+
+    for(const auto &c: alart_port) raw_data[idx++] = c;; // 预留
+    raw_data[idx++] = alart_trigger_mode;    
+    
+    for (auto it = alart_classes.begin(); it != alart_classes.end(); it++)
+        raw_data[idx++] = *it;
+
+    raw_data[idx++] = alart_threat_level;
+    raw_data[idx++] = unknownObj_alart_conf;
+
+    raw_data[idx++] = alart_free & 0xff;
+    raw_data[idx++] = alart_free >> 8;
+
+    for(const auto &c: keep) raw_data[idx++] = c;; // 预留
+
+    raw_data[idx++] = error_msg;    
+
+    raw_data[idx++] = checkSum & 0xff;
+    raw_data[idx++] = checkSum >> 8;
+
+    raw_data[idx++] = tail;
+
+    assert(idx==len);
+    buffer_len = len;
+}
+
 
 // ------------------------ table 31 36 ------------------------------------------
 // ------------------------ table 32 37 ------------------------------------------
@@ -600,6 +651,8 @@ void table_32::set_value()
     
     tail = raw_data[idx++];
     
+    std::cout <<"idx==buff_len" << idx<< ", " << buffer_len << std::endl;
+
     assert(idx==buffer_len);
     
 }
@@ -644,6 +697,9 @@ table_37& table_37::operator=(const table_32& t32)
     obj_classes.assign(t32.obj_classes.begin(), t32.obj_classes.end());
     memcpy(keep, t32.keep, 2);; // 预留
     tail = 0xAA; // same
+
+    buffer_len = t32.buffer_len + 1;
+
     return *this;
 }
 
@@ -675,6 +731,42 @@ uint16_t table_37::get_checkSum()
 
 }
 
+
+
+void table_37::set_buffer()
+{
+    uint16_t len = data_len + 7; //
+//    uint8_t buff[len];
+    raw_data = std::make_unique<unsigned char[]>(len);
+    
+    int idx=0;
+    raw_data[idx++] = header & 0xff;
+    raw_data[idx++] = header >> 8;
+
+    raw_data[idx++] = data_len & 0xff;
+    raw_data[idx++] = data_len >> 8;
+    
+    raw_data[idx++] = msg_code & 0xff;
+    raw_data[idx++] = msg_code >> 8;
+
+    raw_data[idx++] = control_type;
+
+    for (auto it = obj_classes.begin(); it != obj_classes.end(); it++)
+        raw_data[idx++] = *it;
+
+    for(const auto &c: keep) raw_data[idx++] = c;; // 预留
+
+    raw_data[idx++] = error_msg;    
+
+    raw_data[idx++] = checkSum & 0xff;
+    raw_data[idx++] = checkSum >> 8;
+
+    raw_data[idx++] = tail;
+
+    assert(idx==len);
+    buffer_len = len;
+
+}
 
 // ------------------------ table 32 37 ------------------------------------------
 // ------------------------condition query------------------------------------------
@@ -718,6 +810,14 @@ table_39& table_39::operator=(const table_38& t38)
     data_len = 155 + alart_classes.size() - 7;
     msg_code = 0x0804;// t32.msg_code;
     feedback_type = 0x01;
+
+
+    obj_conf = 50;
+
+    memcpy(data_source, "192.18e729472947294727373333330000000.222192.18e729472947294727373333330000000.2221234567891127", 96);
+    memcpy(alart_port, "111111111111111111111234",24);
+
+    // data_source = d_s;
     
     error_msg = 0x0;
     tail = 0xaa;
@@ -851,6 +951,8 @@ table_40& table_40::operator=(const table_38& t38)
     msg_code = 0x0804;// t32.msg_code;
     feedback_type = 0x02;
     
+
+
     
     error_msg = 0x00;
     tail = 0xaa;
@@ -865,11 +967,11 @@ uint16_t table_40::get_checkSum()
     uint8_t buff[len];
     
     int idx=0;
-    buff[idx++] = data_len >> 8;
     buff[idx++] = data_len & 0xff;
+    buff[idx++] = data_len >> 8;
     
-    buff[idx++] = msg_code >> 8;
     buff[idx++] = msg_code & 0xff;
+    buff[idx++] = msg_code >> 8;
     
     buff[idx++] = feedback_type;  // device condition feedback.
 
@@ -899,15 +1001,38 @@ uint16_t table_40::get_checkSum()
 // ------------------------ table 38 39 40 ------------------------------------------
 // ------------------------ table 44  image upload msg ------------------------------------------
 
+table_44::table_44(const table_44& t44)
+{
+    header = t44.header;
+    data_len = t44.data_len;
+    msg_code = t44.msg_code;
+    msg_class = t44.msg_class;
+    image_id = t44.image_id;
+    pkg_order = t44.pkg_order;
+    pkg_type = t44.pkg_type;
+    pkg_total_num = t44.pkg_total_num;
+
+    //img_data
+    memcpy(keep, t44.keep,6);
+
+    // checkSum?
+    tail = t44.tail;
+
+}
+
+
 uint16_t table_44::get_checkSum()
 {
-    long len = sizeof(table_44)-5; //
+    long len = 20 + table_44::img_buff_len;//sizeof(table_44)-5; //
     uint8_t buff[len];
     
     int idx=0;
     
     buff[idx++] = data_len & 0xff;
     buff[idx++] = data_len >> 8;
+
+    // std::cout <<"xxxxxx: " <<  +(header & 0xff) <<" " << +(header >> 8) << std::endl;
+
     
     buff[idx++] = msg_code & 0xff;
     buff[idx++] = msg_code >> 8; //消息代码
@@ -924,10 +1049,13 @@ uint16_t table_44::get_checkSum()
     buff[idx++] = pkg_order >> 8;
 
     buff[idx++] = pkg_type;
-    buff[idx++] = pkg_total_num;
+
+    buff[idx++] = pkg_total_num & 0xff;
+    buff[idx++] = pkg_total_num >> 8; //消息代码
     
 //    for(const auto &c: img_data) buff[idx++] = c; // img data
-    for(int i=0; i<this->width * this->height * this->channel; i++)
+    // for(int i=0; i<this->width * this->height * this->channel; i++)
+    for(int i=0; i<table_44::img_buff_len; i++)
         buff[idx++] = img_data[i];
     
     for(const auto &c: keep) buff[idx++] = c; // 预留
@@ -937,6 +1065,107 @@ uint16_t table_44::get_checkSum()
     
     return crc;
 }
+
+
+void table_44::init_info(table_44& t44)
+{
+    t44.header = 0xeb90;
+    t44.data_len = 25 + table_44::img_buff_len - 7;
+    t44.msg_code = 0x0707;
+    t44.msg_class = 0x03;
+
+    t44.pkg_type = 0x0;
+
+    t44.image_id = 0x1;
+    t44.pkg_order = 0x00;
+    t44.pkg_type = 0x00;
+
+    t44.pkg_total_num = 6; //table_44::width * table_44::height * table_44::channel / table_44::img_buff_len;
+    
+//    img_data;  // diff
+    
+    memcpy(t44.keep, "00keep",6);
+    
+    t44.checkSum = t44.get_checkSum();
+    t44.tail = 0xaa;
+}
+
+
+
+std::ostream& operator << (std::ostream &os, const table_44 &t44)
+{
+    os <<"--------- table 44 info:------------- \n";
+    os << std::hex ;
+    os << "header: \t" <<    +t44.header << std::endl;
+    os << "data_len: \t" <<  +t44.data_len << std::endl;
+    os << "msg_code: \t" <<  +t44.msg_code << std::endl;
+    os << "msg_class: \t" << +t44.msg_class << std::endl;
+    os << "image_id: \t" <<  +t44.image_id << std::endl;
+    os << "pkg_order: \t" << +t44.pkg_order << std::endl;
+    os << "pkg_type: \t" <<  +t44.pkg_type << std::endl;
+    os << "pkg_total_num: \t" <<  +t44.pkg_total_num << std::endl;
+    os << "img_data len: \t" <<  +t44.table_44::img_buff_len << std::endl;
+    os << "push buffer_len: \t" <<  +t44.table_44::buffer_len << std::endl;
+    
+    os << "keep: \t";
+    for(const auto& c: t44.keep) os << c ;
+    os <<std::endl;
+    
+    os << "checkSum: \t" <<  +t44.table_44::checkSum << std::endl;
+    os << "tail: \t" <<  +t44.table_44::tail << std::endl;;
+    
+    os<< std::dec;
+    
+    return os;
+}
+
+
+
+void table_44::set_buffer()
+{
+    buffer_len = 25 + table_44::img_buff_len;  // all elements with t44
+    push_buffer = std::make_unique<unsigned char[]>(buffer_len);
+    
+    long idx = 0;
+    push_buffer[idx++] = header & 0xff;
+    push_buffer[idx++] = header >> 8;
+    push_buffer[idx++] = data_len & 0xff;
+    push_buffer[idx++] = data_len >> 8;
+    push_buffer[idx++] = msg_code & 0xff;
+    push_buffer[idx++] = msg_code >> 8;
+    
+    push_buffer[idx++] = msg_class;
+    
+    push_buffer[idx++] = image_id & 0xff;
+    push_buffer[idx++] = image_id >> 8;
+    push_buffer[idx++] = image_id >> 16;
+    push_buffer[idx++] = image_id >> 24;
+    
+    push_buffer[idx++] = pkg_order & 0xff;
+    push_buffer[idx++] = pkg_order >> 8;
+    
+    push_buffer[idx++] = pkg_type;
+
+    push_buffer[idx++] = pkg_total_num & 0xff;
+    push_buffer[idx++] = pkg_total_num >> 8;
+    
+    for (int i=0; i<table_44::img_buff_len; i++) {
+        push_buffer[idx++] = img_data[i];
+    }
+    
+    for(const auto& c: keep) push_buffer[idx++]  = c;
+    push_buffer[idx++] = checkSum & 0xff;
+    push_buffer[idx++] = checkSum >> 8;
+    push_buffer[idx++] = tail;
+    
+//    std::cout <<"-->  " <<buffer_len <<" " << idx << std::endl;
+    
+    assert(buffer_len==idx); //ensure not  missing data.
+    img_data.reset();
+    
+}
+
+
 
 table_44::table_44()
 {

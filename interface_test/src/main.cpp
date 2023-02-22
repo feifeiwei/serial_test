@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#include <fstream>
+
 
 #include "table_msgs.hpp"
 #include "socket_utils.hpp"
-
-
+#include <thread>
+#include <chrono>
 //#define PORT 18000
 
 cv::Mat ucharArray2Mat(unsigned char* frame_char, int width, int height, int channel)
@@ -162,17 +164,22 @@ void t38_39_40_test_init(table_38& t1, table_39& t39, table_40& t40)
 }
 
 
-void t44_init(table_44& t44)
-{
-    t44.header = 0xeb90;
-    t44.data_len = 0x0705;
-    t44.msg_code = 0x8a;
-    
-    
-    strcpy((char*)t44.keep, "66keep");
-}
-
-
+//void t44_init(table_44& t44)
+//{
+//    t44.header = 0xeb90;
+//    t44.data_len = 25 + table_44::img_buff_len - 7;
+//    t44.msg_code = 0x0707;
+//    t44.msg_class = 0x03;
+//
+//    t44.pkg_type = 0x00;
+//
+//    t44.image_id = 0x0;
+//    t44.pkg_order = 0x00;
+//
+//
+//    memcpy(t44.keep, "00keep",6);
+//    t44.tail = 0xaa;
+//}
 
 
 
@@ -193,7 +200,7 @@ int main(int argc, const char *argv[])
     
 //
     Socket_pullMsg gt("192.168.1.200", 18000);//atoi(pull_port.c_str()));
-    Socket_pushMsg ps("192.168.1.205", 10000);//atoi(push_port.c_str()));
+    Socket_pushMsg ps("192.168.1.206", 10000);//atoi(push_port.c_str()));
     
 //    Socket_pullMsg gt("127.0.0.1", 18000);
 //    Socket_pushMsg ps("127.0.0.1", 18000);
@@ -229,12 +236,43 @@ int main(int argc, const char *argv[])
         table_34 t34;
         std::cout <<"waiting for t29 msg..." << std::endl;
         gt.pull_msg<table_29>(t29);
+
         t34 = t29;
         if (t29.is_equal()) {
             t34.error_msg = 0x0;
             std::cout << "check out is ok!" << std::endl;
+
+            // std::cout << "you check: " << t29.checkSum << std::endl;
+            // std::cout << "my check: " << t29.get_checkSum() << std::endl;
+
         }else{
             t34.error_msg = 0x1;
+            std::cout << "you check: " << +t29.checkSum << std::endl;
+            std::cout << "my check: " << t29.get_checkSum() << std::endl;
+
+
+            std::cout << "header: " << +t29.header << std::endl;
+            std::cout << "data_len: " << +t29.data_len << std::endl;
+            std::cout << "msg_code: " << +t29.msg_code << std::endl;
+            std::cout << "control_type: " << +t29.control_type << std::endl;
+            std::cout << "det_isBegin: " << +t29.det_isBegin << std::endl;
+            std::cout << "det_pattern: " << +t29.det_pattern << std::endl;
+            std::cout << "det_dataSource: " << +t29.det_dataSource << std::endl;
+
+            std::cout << "preprocess_method: " << +t29.preprocess_method << std::endl;
+            std::cout << "obj_conf: " << +t29.obj_conf << std::endl;
+            std::cout << "obj_rec_conf: " << +t29.obj_rec_conf << std::endl;
+
+            std::cout << "minimum_len: " << +t29.minimum_len << std::endl;
+            std::cout << "minimum_width: " << +t29.minimum_width << std::endl;
+            std::cout << "unknown_det_begin: " << +t29.unknown_det_begin << std::endl;
+
+
+            std::cout << "keep: " << t29.keep << std::endl;
+            
+
+            std::cout << "tail: " << +t29.tail << std::endl;
+
             std::cout << "check out fails!" << std::endl;
         }
         
@@ -272,65 +310,67 @@ int main(int argc, const char *argv[])
         
         std::cout <<"waiting for t31 msg..." << std::endl;
         gt.pull_msg_t31(t31.raw_data, t31.buffer_len);
-//        int idx = 0;
-//        t31.raw_data[idx++] = 144;
-//        t31.raw_data[idx++] = 235;
-//        t31.raw_data[idx++] = 43;
-//        t31.raw_data[idx++] = 0;
-//        t31.raw_data[idx++] = 5;
-//        t31.raw_data[idx++] = 7;
-//        t31.raw_data[idx++] = 3;
-//        t31.raw_data[idx++] = 1;
-//        t31.raw_data[idx++] = 48;
-//        t31.raw_data[idx++] = 48;
-//        t31.raw_data[idx++] = 48;
-//        t31.raw_data[idx++] = 48;
-//        t31.raw_data[idx++] = 48;
-//        t31.raw_data[idx++] = 49;
-//        t31.raw_data[idx++] = 57;
-//        t31.raw_data[idx++] = 50;
-//        t31.raw_data[idx++] = 46;
-//        t31.raw_data[idx++] = 49;
-//        t31.raw_data[idx++] = 54;
-//        t31.raw_data[idx++] = 56;
-//        t31.raw_data[idx++] = 46;
-//        t31.raw_data[idx++] = 49;
-//        t31.raw_data[idx++] = 46;
-//        t31.raw_data[idx++] = 50;
-//        t31.raw_data[idx++] = 48;
-//        t31.raw_data[idx++] = 48;
-//        t31.raw_data[idx++] = 58;
-//        t31.raw_data[idx++] = 49;
-//
-//        t31.raw_data[idx++] = 56;
-//        t31.raw_data[idx++] = 48;
-//        t31.raw_data[idx++] = 48;
-//        t31.raw_data[idx++] = 48;
-//
-//        t31.raw_data[idx++] = 1;
-//        t31.raw_data[idx++] = 1;
-//        t31.raw_data[idx++] = 2;
-//        t31.raw_data[idx++] = 3;
-//        t31.raw_data[idx++] = 4;
-//        t31.raw_data[idx++] = 5;
-//        t31.raw_data[idx++] = 0;
-//        t31.raw_data[idx++] = 1;
-//        t31.raw_data[idx++] = 100;
-//        t31.raw_data[idx++] = 200;
-//        t31.raw_data[idx++] = 1;
-//
-//        t31.raw_data[idx++] = 48;
-//        t31.raw_data[idx++] = 48;
-//        t31.raw_data[idx++] = 48;
-//        t31.raw_data[idx++] = 49;
-//
-//        t31.raw_data[idx++] = 206;
-//        t31.raw_data[idx++] = 80;
-//        t31.raw_data[idx++] = 170;
-//        t31.buffer_len = 50;
+       int idx = 0;
+       // t31.raw_data[idx++] = 144;
+       // t31.raw_data[idx++] = 235;
+       // t31.raw_data[idx++] = 43;
+       // t31.raw_data[idx++] = 0;
+       // t31.raw_data[idx++] = 5;
+       // t31.raw_data[idx++] = 7;
+       // t31.raw_data[idx++] = 3;
+       // t31.raw_data[idx++] = 1;
+       // t31.raw_data[idx++] = 48;
+       // t31.raw_data[idx++] = 48;
+       // t31.raw_data[idx++] = 48;
+       // t31.raw_data[idx++] = 48;
+       // t31.raw_data[idx++] = 48;
+       // t31.raw_data[idx++] = 49;
+       // t31.raw_data[idx++] = 57;
+       // t31.raw_data[idx++] = 50;
+       // t31.raw_data[idx++] = 46;
+       // t31.raw_data[idx++] = 49;
+       // t31.raw_data[idx++] = 54;
+       // t31.raw_data[idx++] = 56;
+       // t31.raw_data[idx++] = 46;
+       // t31.raw_data[idx++] = 49;
+       // t31.raw_data[idx++] = 46;
+       // t31.raw_data[idx++] = 50;
+       // t31.raw_data[idx++] = 48;
+       // t31.raw_data[idx++] = 48;
+       // t31.raw_data[idx++] = 58;
+       // t31.raw_data[idx++] = 49;
+
+       // t31.raw_data[idx++] = 56;
+       // t31.raw_data[idx++] = 48;
+       // t31.raw_data[idx++] = 48;
+       // t31.raw_data[idx++] = 48;
+
+       // t31.raw_data[idx++] = 1;
+       // t31.raw_data[idx++] = 1;
+       // t31.raw_data[idx++] = 2;
+       // t31.raw_data[idx++] = 3;
+       // t31.raw_data[idx++] = 4;
+       // t31.raw_data[idx++] = 5;
+       // t31.raw_data[idx++] = 0;
+       // t31.raw_data[idx++] = 1;
+       // t31.raw_data[idx++] = 100;
+       // t31.raw_data[idx++] = 200;
+       // t31.raw_data[idx++] = 1;
+
+       // t31.raw_data[idx++] = 48;
+       // t31.raw_data[idx++] = 48;
+       // t31.raw_data[idx++] = 48;
+       // t31.raw_data[idx++] = 49;
+
+       // t31.raw_data[idx++] = 206;
+       // t31.raw_data[idx++] = 80;
+       // t31.raw_data[idx++] = 170;
+       // t31.buffer_len = 50;
         
         t31.set_value();
-        t36= t31;
+        t36 = t31;
+
+        // t36.tail = 0xaa;
         
 //        uint16_t checksum = t31.checkSum;
 //        uint16_t my_checksum =  t31.get_checkSum();
@@ -347,7 +387,9 @@ int main(int argc, const char *argv[])
         t36.checkSum = t36.get_checkSum();
         std::cout <<"pushing t36 msg..." << std::endl;
 
-        ps.push_msg<table_36>(t36);
+        t36.set_buffer();
+
+        ps.push_msg_36(t36.raw_data, t36.buffer_len);
     }
     else if(test_config=="t32")
     {
@@ -371,8 +413,12 @@ int main(int argc, const char *argv[])
         
         t37.checkSum = t37.get_checkSum();
         std::cout <<"pushing t37 msg..." << std::endl;
+
+        t37.set_buffer();
         
-        ps.push_msg<table_37>(t37);
+        // ps.push_msg<table_37>(t37);
+        ps.push_msg_36(t37.raw_data, t37.buffer_len);
+
     }
     
     else if(test_config=="t38")// 38，29，40
@@ -383,8 +429,8 @@ int main(int argc, const char *argv[])
         table_40 t40;
         
         std::cout <<"waiting for t38 msg..." << std::endl;
-//        gt.pull_msg<table_38>(t38);
-        t38.query_type = 0x01;
+        gt.pull_msg<table_38>(t38);
+        // t38.query_type = 0x01;
 
         if (t38.is_equal()) {
             t39.error_msg = 0x0;
@@ -411,6 +457,8 @@ int main(int argc, const char *argv[])
         else if(t38.query_type == 0x02)
         {
             t40 = t38;
+            t40.checkSum = t40.get_checkSum();
+
             std::cout <<"pushing t40 msg..." << std::endl;
             ps.push_msg<table_40>(t40);
         }else
@@ -418,24 +466,278 @@ int main(int argc, const char *argv[])
             std::cout <<"error pushing msg for ... query type = "<< +t38.query_type << std::endl;
         }
     }
+
+
     else if(test_config=="t44")// upload image
     {
+        // ------ get image data --------
+        std::cout <<"\nupload image testing..." << std::endl;
+        // cv::Mat im = cv::imread("/userdata/223.jpg"); // need change
+        // std::cout <<"image info: " << im.cols <<" " << im.rows << std::endl;
+
+        // const char* file_name = "/userdata/223.jpg";
+        // FILE* fp = fopen(file_name, "rb");
+
+        // if (fp == NULL) 
+        // {
+        //     std::cout << "文件" << file_name << "出错或不存在" << std::endl;
+        //     exit(-1);
+        // }
+
+        // fseek(fp, 0, SEEK_END);
+        // int  length=ftell(fp);
+        // char* ImgBuffer=(char*)malloc( length* sizeof(char) );
+        // fread(ImgBuffer, length, 1, fp);
+        // fclose(fp);
+        int w = 640;//im.cols;
+        int h = 480;//im.rows;
+        std::cout <<"read image..." << std::endl;
+        std::ifstream is("/userdata/223.jpg", std::ifstream::in | std::ios::binary);
+
+
+        std::cout <<"read image done..." << std::endl;
+        is.seekg(0, is.end);
+        int length = is.tellg();
+        is.seekg(0, is.beg);
+
+        char* buffer = new char[length];
+
+        std::cout << "文件长度" << length << "== " << w*h*3 << std::endl;
+        is.read(buffer, length);
+        // delete buffer;
+
+        // img_buff_len = length; //==18066
+
+        unsigned char *raw_img_data = new unsigned char[length];//im.data;
+        memcpy(raw_img_data, buffer, length);
+        delete buffer;
         
-        std::cout <<"upload image testing..." << std::endl;
-        cv::Mat im = cv::imread("/Users/feifeiwei/dog.jpg"); // need change
-        std::cout <<"image info: " << im.cols <<" " << im.rows << std::endl;
-        
+//        for (int i=1000; i < 10000; i++) {
+//            std::cout <<"d: " << +data[i] <<" "  << std::endl;
+//        }
+        // ------ split pkg --------
         table_44 t44;
+        table_44::init_info(t44);
+
+        // table_44::width = w;
+        // table_44::height = h;
         
-        int w = 1920;
-        int h = 1080;
-        unsigned char *data = new unsigned char[w*h*3];//im.data;
-        memcpy(data, im.data, h*w*3);
+        std::cout <<"pkg_total_num: " <<  + t44.pkg_total_num <<" " << std::endl;
+
+//        std::cout << t44 << std::endl;
+        for (int j = 0; j < 2000; ++j)
+        {
+            /* code */
+            for (int i = 0; i < t44.pkg_total_num; ++i) // from 1 to end.
+            {
+
+                unsigned char *data_tmp = new unsigned char[table_44::img_buff_len]{0}; //default value is 0;
+                memcpy(data_tmp, raw_img_data + i * table_44::img_buff_len,  table_44::img_buff_len);
+
+                t44.img_data.reset(data_tmp); //获取每包图像数据
+                t44.pkg_order = i;            // 包id
+                t44.image_id = j;
+                t44.checkSum = t44.get_checkSum(); //
+
+                t44.set_buffer();
+
+                std::cout << +i << ":\n " << t44 << std::endl;
+                ps.push_msg_39(t44.push_buffer, t44.buffer_len);
+                // ps.push_msg_44_split(t44);
+    //            break;
+                t44.img_data.reset();
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+        }
+
+
         
-        t44.header = 0xeb90;
-        t44.img_data.reset(data);
+        for (int i = 0; i < t44.pkg_total_num; ++i) // from 1 to end.
+        {
+
+            unsigned char *data_tmp = new unsigned char[table_44::img_buff_len]{0}; //default value is 0;
+            memcpy(data_tmp, raw_img_data + i * table_44::img_buff_len,  table_44::img_buff_len);
+
+            t44.img_data.reset(data_tmp); //获取每包图像数据
+            t44.pkg_order = i;            // 包id
+            t44.image_id = 0x01;
+            t44.checkSum = t44.get_checkSum(); //
+
+            t44.set_buffer();
+
+            std::cout << +i << ":\n " << t44 << std::endl;
+            ps.push_msg_39(t44.push_buffer, t44.buffer_len);
+            // ps.push_msg_44_split(t44);
+//            break;
+            t44.img_data.reset();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
         
-        ps.push_msg_t44(t44, 1024);
+        
+
+        for (int i = 0; i < t44.pkg_total_num; ++i) // from 1 to end.
+        {
+
+            unsigned char *data_tmp = new unsigned char[table_44::img_buff_len]{0}; //default value is 0;
+            memcpy(data_tmp, raw_img_data+i*table_44::img_buff_len,  table_44::img_buff_len);
+
+            t44.img_data.reset(data_tmp); //获取每包图像数据
+            t44.pkg_order = i;            // 包id
+
+            t44.image_id = 0x02;
+            t44.checkSum = t44.get_checkSum();
+            t44.set_buffer();
+
+            std::cout << +i << ":\n " << t44 << std::endl;
+            ps.push_msg_39(t44.push_buffer, t44.buffer_len);
+            // ps.push_msg_44_split(t44);
+//            break;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        
+        for (int i = 0; i < t44.pkg_total_num; ++i) // from 1 to end.
+        {
+
+            unsigned char *data_tmp = new unsigned char[table_44::img_buff_len]{0}; //default value is 0;
+            memcpy(data_tmp, raw_img_data+i*table_44::img_buff_len,  table_44::img_buff_len);
+
+            t44.img_data.reset(data_tmp); //获取每包图像数据
+            t44.pkg_order = i;            // 包id
+
+            t44.image_id = 0x03;
+            t44.checkSum = t44.get_checkSum();
+            t44.set_buffer();
+
+            std::cout << +i << ":\n " << t44 << std::endl;
+            ps.push_msg_39(t44.push_buffer, t44.buffer_len);
+            // ps.push_msg_44_split(t44);
+//            break;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        for (int i = 0; i < t44.pkg_total_num; ++i) // from 1 to end.
+        {
+
+            unsigned char *data_tmp = new unsigned char[table_44::img_buff_len]{0}; //default value is 0;
+            memcpy(data_tmp, raw_img_data+i*table_44::img_buff_len,  table_44::img_buff_len);
+
+            t44.img_data.reset(data_tmp); //获取每包图像数据
+            t44.pkg_order = i;            // 包id
+
+            t44.image_id = 0x04;
+            t44.checkSum = t44.get_checkSum();
+            t44.set_buffer();
+
+            std::cout << +i << ":\n " << t44 << std::endl;
+            ps.push_msg_39(t44.push_buffer, t44.buffer_len);
+            // ps.push_msg_44_split(t44);
+//            break;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        for (int i = 0; i < t44.pkg_total_num; ++i) // from 1 to end.
+        {
+
+            unsigned char *data_tmp = new unsigned char[table_44::img_buff_len]{0}; //default value is 0;
+
+            memcpy(data_tmp, raw_img_data+i*table_44::img_buff_len,  table_44::img_buff_len);
+
+            t44.img_data.reset(data_tmp); //获取每包图像数据
+            t44.pkg_order = i;            // 包id
+
+            t44.image_id = 0x05;
+            t44.checkSum = t44.get_checkSum();
+            t44.set_buffer();
+
+            std::cout << +i << ":\n " << t44 << std::endl;
+            ps.push_msg_39(t44.push_buffer, t44.buffer_len);
+            // ps.push_msg_44_split(t44);
+//            break;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        
+//        std::vector<table_44> t44s;
+//
+//        ps.push_msg_44_split(t441);
+//        sleep(1);  //延迟1秒
+
+//        for (int i = 1; i < t441.pkg_total_num; ++i) // from 1 to end.
+//        {
+//            unsigned char *data_tmp = new unsigned char[img_buff_len];
+//            /* code */
+//            table_44 t44(t441);
+//
+//            t44.pkg_order = t441.pkg_order + i;
+//            memcpy(data_tmp, data+i*img_buff_len,  img_buff_len);
+//
+//
+//            t44.img_data.reset(data_tmp);
+//            t44.checkSum = t44.get_checkSum();
+//
+//            // t44s.push_back(t44);
+//            ps.push_msg_44_split(t44);
+//            // sleep(1);  //延迟1秒
+//            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+//
+//        }
+
+        // std::cout <<"pkg_total_num : " << +t441.pkg_total_num << std::endl;
+        // std::cout <<"total num: " << t44s.size() << std::endl;
+
+
+        // for (int i = 0; i < t44s.size(); ++i)
+        // {
+        //     /* code */
+            
+        //     sleep(1);  //延迟1秒
+
+        //     std::cout <<"push idx: " << i << std::endl;
+        // }
+        std::cout <<"Done." << std::endl;
+
+        // table_44 t442(t441);
+        // table_44 t443(t441);
+        // table_44 t444(t441);
+
+        // t442.pkg_order = 0x01;
+        // t443.pkg_order = 0x02;
+        // t444.pkg_order = 0x03;
+
+        // t441.img_data.reset(data1);
+        // t442.img_data.reset(data2);
+        // t443.img_data.reset(data3);
+        // t444.img_data.reset(data4);
+
+
+        // t441.checkSum = t441.get_checkSum();
+        // t442.checkSum = t442.get_checkSum();
+        // t443.checkSum = t443.get_checkSum();
+        // t444.checkSum = t444.get_checkSum();
+        
+        // ps.push_msg_44_split(t441);
+        // sleep(1);  //延迟1秒
+        // ps.push_msg_44_split(t441);
+        // sleep(1);  //延迟1秒
+        // ps.push_msg_44_split(t441);
+        // sleep(1);  //延迟1秒
+        // ps.push_msg_44_split(t441);
+
+        // sleep(1);  //延迟1秒
+        // std::cout <<"Done." << std::endl;
+
+
+        // delete []data;
+
 //        auto p = t44.img_data.release();
     //    cv::Mat image_mat = cv::Mat(1080, 1920, CV_8UC3, p);//
     //    cv::imshow("sss", image_mat);

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(run_inferface_test)
 
-set(CMAKE_CXX_FLAGS "${CAMKE_CXX_FLAGS} -std=c++14 -pthread")
+set(CMAKE_CXX_FLAGS "${CAMKE_CXX_FLAGS} -std=c++17 -pthread")
 
 
 find_package(OpenCV REQUIRED)
