@@ -1,7 +1,5 @@
-#include "control_base.pb.h"
 
-#include "cyber/cyber.h"
-#include <iostream>
+#include "common_include.h"
 
 using test::control_base;
 

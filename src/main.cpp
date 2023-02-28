@@ -1,10 +1,5 @@
-#include <iostream>
-#include "serial/serial.h"
-#include <vector>
-#include "cyber/cyber.h"
-#include "cyber/state.h"
-#include "control_base.pb.h"
-#include "config.pb.h"
+#include "common_include.h"
+
 //#include "modules/drivers/contorl_center/contorl_component.h"
 
 using apollo::cyber::Component;

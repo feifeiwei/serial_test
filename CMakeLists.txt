@@ -29,8 +29,8 @@ include_directories(
     /home/official_code/include/bsnn
     /home/official_code/bsnn/3rdparty/bst_isp/include
     ${OpenCV_INCLUDE_DIRS}
-    ${PROJECT_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/include
+    /home/tools/serial-main/include
     )
 
 
@@ -140,10 +140,11 @@ PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
 message("PROTO_SRCS = ${PROTO_SRCS}")
 message("PROTO_HDRS = ${PROTO_HDRS}")
 
-#add_library(proto_lib STATIC ${PROTO_SRCS} ${PROTO_HDRS})
-#target_include_directories(proto_lib PUBLIC ${PROTOBUF_INCLUDE_DIR})
-#target_link_libraries(proto_lib PRIVATE ${PROTOBUF_STATIC_LIBRARIES} Threads::Threads)
 
+message(">>>---------------------------------------------------------------------")
+get_property(dirs DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+message(">>> include_dirs=${dirs}") #打印一下目录情况
+message(">>>---------------------------------------------------------------------")
 
 add_executable(serial_port
                 src/main.cpp
@@ -151,20 +152,17 @@ add_executable(serial_port
                 ${PROTO_HDRS}
                 )
 
-#add_executable(listener 
-#                src/listener.cpp
-#                ${PROTO_SRCS}
-#                ${PROTO_HDRS}
-#                )
+add_executable(listener 
+                src/listener.cpp
+                ${PROTO_SRCS}
+                ${PROTO_HDRS}
+                )
 
-#add_executable(publisher 
-#                src/publisher.cpp
-#                ${PROTO_SRCS}
-#                ${PROTO_HDRS}
-#                )
+add_executable(publisher 
+                src/publisher.cpp
+                ${PROTO_SRCS}
+                ${PROTO_HDRS}
+                )
 target_link_libraries(serial_port ${LIBcyber_proto} ${lib_serial} ${LIBads_log} ${lib_fastrtps} ${lib_cyber} ${PROTOBUF_LIBRARIES})
-#target_link_libraries(listener ${LIBcyber_proto} ${lib_serial} ${LIBads_log} ${lib_fastrtps} ${lib_cyber} ${PROTOBUF_LIBRARIES})
-#target_link_libraries(publisher ${LIBcyber_proto} ${lib_serial} ${LIBads_log} ${lib_fastrtps} ${lib_cyber} ${PROTOBUF_LIBRARIES})
-include_directories(/home/tools/serial-main/include
-                    PUBLIC ${PROTOBUF_INCLUDE_DIRS}
-                    )
+target_link_libraries(listener ${LIBcyber_proto} ${lib_serial} ${LIBads_log} ${lib_fastrtps} ${lib_cyber} ${PROTOBUF_LIBRARIES})
+target_link_libraries(publisher ${LIBcyber_proto} ${lib_serial} ${LIBads_log} ${lib_fastrtps} ${lib_cyber} ${PROTOBUF_LIBRARIES})

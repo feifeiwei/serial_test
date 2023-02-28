@@ -1,3 +1,6 @@
+#ifndef TABLE_MSGS_HPP
+#define TABLE_MSGS_HPP
+
 //
 //  table_msgs.hpp
 //  demo-learn
@@ -29,7 +32,7 @@ struct tabele_29_34    //要发送的数据结构
     uint8_t num5;
     uint8_t num6;
 
-    unsigned char num7[24];  // how to get 24bit type?? string==24bit
+    unsigned char num7[24];  //
     unsigned char num8[24];
     unsigned char num9[24];
     unsigned char num10[63]; // 预留

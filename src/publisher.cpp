@@ -1,9 +1,5 @@
 
-#include "control_base.pb.h"
-#include <iostream>
-#include "cyber/cyber.h"
-#include "cyber/time/rate.h"
-#include "cyber/time/time.h"
+#include "common_include.h"
 
 
 using test::control_base;

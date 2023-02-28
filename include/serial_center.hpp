@@ -1,18 +1,10 @@
-#include <iostream>
-#include <string>
-#include "serial/serial.h"
-#include <vector>
-#include "cyber/cyber.h"
-#include "cyber/state.h"
-#include "cyber/time/rate.h"
-#include "cyber/time/time.h"
+#ifndef SERIAL_CENTER_HPP
+#define SERIAL_CENTER_HPP
 
-#include "control_base.pb.h"
-#include "config.pb.h"
-
+#include "common_include.h"
 #include "table_msgs.hpp"
 
-
+//处理串口读取的所有消息中心
 class Cyber_serial_center
 {
 
@@ -29,5 +21,5 @@ private:
 
 }
 
-
+#endif
 
